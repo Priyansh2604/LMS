@@ -1,0 +1,211 @@
+.hero-carousel {
+  position: relative;
+  width: 100%;
+  min-height: min(720px, calc(100vh - 80px));
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.carousel-slide {
+  position: relative;
+  width: 100%;
+  min-height: min(720px, calc(100vh - 80px));
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: min(720px, calc(100vh - 80px));
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.85) brightness(0.58);
+}
+
+.carousel-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 96px 7vw 80px;
+  background: linear-gradient(90deg, rgba(8, 11, 13, 0.92) 0%, rgba(8, 11, 13, 0.6) 48%, rgba(8, 11, 13, 0.12) 100%);
+}
+
+.carousel-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(214, 243, 107, 0.14);
+  border: 1px solid rgba(214, 243, 107, 0.38);
+  color: #e4f69a;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.carousel-overlay h2 {
+  max-width: 640px;
+  margin: 22px 0 14px;
+  font-size: clamp(2.8rem, 5vw, 6rem);
+  line-height: 0.96;
+  letter-spacing: -0.045em;
+  color: #f7f7ff;
+  font-weight: 700;
+}
+
+.carousel-overlay p {
+  max-width: 620px;
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.8;
+  color: rgba(240, 242, 255, 0.82);
+}
+
+.carousel-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+
+.carousel-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease, color 0.3s ease;
+  font-family: inherit;
+}
+
+.carousel-btn:hover {
+  transform: translateY(-2px);
+}
+
+.carousel-btn.primary {
+  background: #d6f36b;
+  color: #172019;
+  box-shadow: 0 15px 35px rgba(214, 243, 107, 0.2);
+}
+
+.carousel-btn.secondary {
+  background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(168,164,246,0.18));
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 22px rgba(9, 12, 18, 0.22);
+  position: relative;
+  overflow: hidden;
+}
+
+.carousel-btn.secondary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255,255,255,0.20), transparent 45%, rgba(168,164,246,0.22));
+  opacity: 0.9;
+}
+
+.carousel-btn.secondary:hover {
+  box-shadow: 0 16px 28px rgba(104, 85, 224, 0.28);
+}
+
+.app-shell.theme-light .carousel-btn.secondary {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(224,231,255,0.95));
+  color: #1f2937;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  box-shadow: 0 12px 28px rgba(99, 102, 241, 0.14);
+}
+
+.app-shell.theme-light .carousel-btn.secondary::before {
+  background: linear-gradient(120deg, rgba(255,255,255,0.7), transparent 50%, rgba(129,140,248,0.18));
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  background: rgba(18, 19, 26, 0.44);
+  color: #fff;
+  font-size: 2.4rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.carousel-arrow:hover {
+  background: rgba(104, 85, 224, 0.45);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.carousel-arrow.prev {
+  left: 24px;
+}
+
+.carousel-arrow.next {
+  right: 24px;
+}
+
+.carousel-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.carousel-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.carousel-dot.active {
+  width: 34px;
+  border-radius: 999px;
+  background: #d6f36b;
+}
+
+@media (max-width: 768px) {
+  .carousel-slide img {
+    height: min(680px, calc(100vh - 72px));
+  }
+
+  .carousel-overlay {
+    padding: 92px 22px 72px;
+  }
+
+  .carousel-overlay h2 {
+    max-width: 300px;
+  }
+
+  .carousel-overlay p {
+    max-width: 320px;
+    font-size: 0.96rem;
+  }
+
+  .carousel-arrow {
+    width: 46px;
+    height: 46px;
+    font-size: 2rem;
+  }
+}

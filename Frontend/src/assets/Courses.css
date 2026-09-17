@@ -1,0 +1,120 @@
+.courses {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(20px, 3vw, 32px);
+    padding: 8px 10px 90px;
+}
+
+.course {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--surface);
+    min-height: 490px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 18px 35px rgba(0, 0, 0, 0.14);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease, color 0.3s ease;
+    overflow: hidden;
+}
+
+.app-shell.theme-light .course {
+    background: var(--surface);
+}
+
+.course:hover {
+    transform: translateY(-5px);
+    border-color: rgba(214, 243, 107, 0.5);
+}
+
+.course img {
+    padding-left: 0;
+    margin: 0;
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-top-right-radius: 18px;
+    border-top-left-radius: 18px;
+}
+
+.course-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+}
+
+.course-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 18px 18px 0;
+}
+
+.course-topic,
+.course-duration {
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.course-topic {
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.course-duration {
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.course h1 {
+    margin: 12px 18px 10px;
+    font-size: 1.45rem;
+    line-height: 1.2;
+    color: var(--text);
+}
+
+.course h2 {
+    font-size: 0.98rem;
+    color: var(--muted);
+    margin: 0 18px 18px;
+    line-height: 1.6;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.course-enroll-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    margin: auto 18px 22px;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    background: var(--accent);
+    color: #172019;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.course-enroll-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(214, 243, 107, 0.2);
+}
+
+.course-enroll-button:focus-visible {
+    outline: 3px solid var(--text);
+    outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+    .courses { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+    .courses {
+        grid-template-columns: minmax(0, 1fr);
+        padding-bottom: 56px;
+    }
+}

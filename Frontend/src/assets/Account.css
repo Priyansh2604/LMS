@@ -1,0 +1,18 @@
+.account-page { width: min(1120px, calc(100% - 40px)); min-height: calc(100vh - 180px); margin: 0 auto; padding: 72px 0 100px; color: var(--text); }
+.account-header { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding-bottom: 42px; border-bottom: 1px solid var(--line); }
+.account-eyebrow { margin: 0 0 14px; color: var(--accent); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.12em; }
+.account-header h1 { margin: 0; font-family: "Space Grotesk", sans-serif; font-size: clamp(2.7rem, 7vw, 6rem); letter-spacing: -0.05em; line-height: 0.95; }
+.account-subtitle, .account-muted { color: var(--muted); }
+.account-avatar-large { display: grid; place-items: center; width: 78px; aspect-ratio: 1; border: 1px solid var(--accent); border-radius: 50%; color: var(--accent); font-size: 2rem; font-weight: 700; }
+.account-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 24px; padding-top: 36px; }
+.account-panel { padding: 28px; border: 1px solid var(--line); background: var(--surface); }
+.account-details { display: grid; gap: 20px; margin: 0; }
+.account-details div { display: grid; gap: 6px; }
+.account-details dt { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.account-details dd { margin: 0; font-size: 1.05rem; }
+.account-history { display: grid; gap: 10px; }
+.account-history-item { display: grid; gap: 6px; padding: 16px; border-left: 3px solid var(--accent); color: var(--text); background: color-mix(in srgb, var(--surface) 70%, var(--accent)); text-decoration: none; }
+.account-history-item span { color: var(--muted); font-size: 0.82rem; }
+.account-status { color: var(--muted); }
+.account-error { color: #ff9b8f; }
+@media (max-width: 760px) { .account-page { width: calc(100% - 32px); padding-top: 42px; } .account-header { align-items: flex-start; } .account-grid { grid-template-columns: 1fr; } }

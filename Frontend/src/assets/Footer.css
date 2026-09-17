@@ -1,0 +1,23 @@
+.site-footer {
+  margin-top: 72px;
+  padding: 32px clamp(20px, 5vw, 76px);
+  border-top: 2px solid var(--accent);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.footer-copyright {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 640px) {
+  .site-footer {
+    align-items: center;
+  }
+}

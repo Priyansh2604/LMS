@@ -1,0 +1,127 @@
+.instructor-page {
+  width: min(1180px, calc(100% - 40px));
+  min-height: calc(100vh - 92px);
+  margin: 0 auto;
+  padding: 72px 0 96px;
+  color: var(--text) !important;
+}
+
+.instructor-heading {
+  padding: 48px clamp(24px, 6vw, 72px);
+  border: 1px solid var(--line) !important;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 58%), var(--surface) !important;
+}
+
+.instructor-eyebrow {
+  color: var(--accent) !important;
+  font-size: 0.74rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.16em !important;
+}
+
+.instructor-title,
+.instructor-panel h2 {
+  color: var(--text) !important;
+  font-family: "Space Grotesk", sans-serif !important;
+  letter-spacing: -0.04em;
+}
+
+.instructor-title {
+  font-size: clamp(2.5rem, 6vw, 5.2rem) !important;
+  line-height: 0.98 !important;
+}
+
+.instructor-intro {
+  color: var(--muted) !important;
+  font-size: 1.05rem !important;
+  line-height: 1.7;
+}
+
+.instructor-panel {
+  border: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: var(--surface) !important;
+  box-shadow: 12px 14px 0 color-mix(in srgb, var(--accent) 7%, transparent) !important;
+}
+
+.instructor-panel label span,
+.instructor-catalog strong {
+  color: var(--text) !important;
+}
+
+.instructor-page input,
+.instructor-page select,
+.instructor-page textarea {
+  border: 1px solid var(--line) !important;
+  border-radius: 5px !important;
+  background: color-mix(in srgb, var(--text) 5%, transparent) !important;
+  color: var(--text) !important;
+  font: inherit;
+}
+
+.instructor-page input::placeholder,
+.instructor-page textarea::placeholder {
+  color: var(--muted) !important;
+}
+
+.instructor-page input:focus,
+.instructor-page select:focus,
+.instructor-page textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent) !important;
+}
+
+.instructor-page button[type="submit"] {
+  min-height: 48px;
+  padding: 12px 18px !important;
+  border-radius: 5px !important;
+  background: var(--accent) !important;
+  color: #172019 !important;
+  box-shadow: none !important;
+  font-weight: 800 !important;
+}
+
+.instructor-page button[type="submit"]:hover {
+  background: #efffa9 !important;
+}
+
+.instructor-page button[type="button"] {
+  font: inherit;
+}
+
+.instructor-page button[type="button"]:hover,
+.instructor-page button[type="submit"]:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.instructor-page button[type="button"]:focus-visible,
+.instructor-page button[type="submit"]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 3px;
+}
+
+.instructor-page > div > section:last-of-type > div,
+.instructor-page .instructor-panel > div:last-child > div {
+  border-color: var(--line) !important;
+  border-radius: 5px !important;
+  background: color-mix(in srgb, var(--text) 3%, transparent) !important;
+}
+
+.instructor-status {
+  border-radius: 5px !important;
+  background: color-mix(in srgb, var(--accent) 9%, transparent) !important;
+  border-color: var(--accent) !important;
+  color: var(--text) !important;
+}
+
+@media (max-width: 640px) {
+  .instructor-page {
+    width: calc(100% - 32px);
+    padding: 40px 0 64px;
+  }
+
+  .instructor-heading {
+    padding: 32px 24px;
+  }
+}
