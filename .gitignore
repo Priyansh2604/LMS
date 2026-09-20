@@ -12,6 +12,7 @@ build/
 coverage/
 
 # Environment files
+Backend/.env
 .env
 .env.*
 !.env.example

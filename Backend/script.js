@@ -1,7 +1,11 @@
 const express = require("express");
 
+const bcrypt = require("bcrypt");
+const pool = require("./db");
+
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
+const defaultCourses = require("./courseData");
 const users = [];
 const topicOptions = [
     "AI & Machine Learning",
@@ -13,184 +17,6 @@ const topicOptions = [
     "IoT",
     "Business",
     "Design",
-];
-
-const defaultCourses = [
-    {
-        id: 1,
-        title: "DevOps A to Z Mastery",
-        topic: "Cloud & DevOps",
-        durationLabel: "18 hours",
-        level: "Intermediate",
-        instructor: "Aarav Mehta",
-        wikimediaTitle: "DevOps",
-        description: "Build reliable delivery pipelines with AWS, Docker, Kubernetes, and CI/CD.",
-        overview: "Move from local development to confident production releases by learning how modern DevOps teams plan, automate, deploy, and monitor software.",
-        outcomes: ["Create automated CI/CD pipelines", "Containerize applications with Docker", "Deploy and scale services with Kubernetes", "Monitor releases and troubleshoot failures"],
-        modules: ["DevOps foundations and Git workflows", "Linux, networking, and scripting essentials", "Docker images and container orchestration", "AWS deployment fundamentals", "Kubernetes, CI/CD, and observability"],
-        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFlJeP0kRB8US7NhL2F6YBAlhJMjzPIdLNqWt-F5NOaQ&s=10",
-        alt: "DevOps tools and workflow",
-        lessons: [
-            {
-                id: 1,
-                title: "Git and release workflows",
-                description: "Understand source control, collaborative release patterns, and how teams ship stable software with confidence.",
-                videoTitle: "Git basics for DevOps",
-                videoUrl: "https://www.youtube.com/watch?v=RGOj5yH7evk",
-                duration: "12 min",
-            },
-        ],
-    },
-    {
-        id: 2,
-        title: "Java Full-Stack",
-        topic: "Development",
-        durationLabel: "24 hours",
-        level: "Intermediate",
-        instructor: "Priya Sharma",
-        wikimediaTitle: "Java (programming language)",
-        description: "Create production-ready applications with Java, Spring Boot, Hibernate, and Maven.",
-        overview: "Build a complete web application from a clean Java backend to a responsive frontend, with persistence, authentication, testing, and deployment included.",
-        outcomes: ["Build REST APIs with Spring Boot", "Persist data with Hibernate and SQL", "Connect frontend and backend applications", "Test and package production services"],
-        modules: ["Java and object-oriented programming", "Spring Boot and REST API design", "Databases, JPA, and Hibernate", "Frontend integration and authentication", "Testing, Maven, and deployment"],
-        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCO3jvxn3ABmRI8o9QvKKjf0rpNL0ejFjOH_APyxCWbQ&s=10",
-        alt: "Java programming code",
-        lessons: [
-            {
-                id: 1,
-                title: "Java foundations and OOP",
-                description: "Review object-oriented programming and the fundamentals that make Java applications scalable and maintainable.",
-                videoTitle: "Java OOP explained",
-                videoUrl: "https://www.youtube.com/watch?v=8cm1x4bC610",
-                duration: "15 min",
-            },
-        ],
-    },
-    {
-        id: 3,
-        title: "DSA Complete",
-        topic: "Computer Science",
-        durationLabel: "14 hours",
-        level: "Beginner to intermediate",
-        instructor: "Rohan Kapoor",
-        wikimediaTitle: "Data structure",
-        description: "Strengthen problem-solving skills through graphs, heaps, stacks, and dynamic programming.",
-        overview: "Develop the structured thinking needed for technical interviews and real software by mastering core data structures and algorithmic patterns.",
-        outcomes: ["Choose the right data structure for a problem", "Analyze time and space complexity", "Solve graph and tree problems", "Apply dynamic programming patterns"],
-        modules: ["Complexity analysis and arrays", "Linked lists, stacks, and queues", "Trees, heaps, and hash tables", "Graphs and traversal algorithms", "Sorting, searching, and dynamic programming"],
-        image: "https://miro.medium.com/0*TazBnJw1_YH1ibTx",
-        alt: "Data structures and algorithms",
-        lessons: [
-            {
-                id: 1,
-                title: "Time complexity and arrays",
-                description: "Learn how to analyze performance and choose efficient patterns when solving technical problems.",
-                videoTitle: "Big O explained",
-                videoUrl: "https://www.youtube.com/watch?v=V6mKVRU1evU",
-                duration: "10 min",
-            },
-        ],
-    },
-    {
-        id: 4,
-        title: "Practical Data Analytics",
-        topic: "Data Analytics",
-        durationLabel: "16 hours",
-        level: "Beginner to intermediate",
-        instructor: "Neha Verma",
-        wikimediaTitle: "Data analysis",
-        description: "Turn raw information into useful decisions with SQL, spreadsheets, Python, and dashboards.",
-        overview: "Learn a practical analysis workflow that takes you from messy data to clear insights, compelling visualizations, and confident business recommendations.",
-        outcomes: ["Clean and prepare datasets for analysis", "Write SQL queries for useful insights", "Build clear charts and dashboards", "Explain findings with data-driven stories"],
-        modules: ["Data analysis workflow and spreadsheets", "SQL queries and relational data", "Python with pandas for analysis", "Charts, dashboards, and reporting", "Projects and communicating insights"],
-        image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80",
-        alt: "Data analytics dashboard on a screen",
-        lessons: [
-            {
-                id: 1,
-                title: "Working with datasets",
-                description: "Explore how to clean messy data and prepare it for reliable analysis and reporting.",
-                videoTitle: "Data cleaning in practice",
-                videoUrl: "https://www.youtube.com/watch?v=U4c2pYt3RZ8",
-                duration: "11 min",
-            },
-        ],
-    },
-    {
-        id: 5,
-        title: "Cybersecurity Fundamentals",
-        topic: "Cybersecurity",
-        durationLabel: "20 hours",
-        level: "Beginner",
-        instructor: "Kabir Singh",
-        wikimediaTitle: "Computer security",
-        description: "Learn the essential practices used to protect accounts, networks, applications, and data.",
-        overview: "Build a strong security mindset through hands-on foundations in threats, identity, encryption, network defense, and incident response.",
-        outcomes: ["Recognize common security threats and attacks", "Apply secure identity and access practices", "Understand encryption and network defense", "Create a practical incident response plan"],
-        modules: ["Security principles and threat awareness", "Identity, authentication, and access control", "Networks, firewalls, and secure protocols", "Encryption, privacy, and secure applications", "Monitoring and incident response"],
-        image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=900&q=80",
-        alt: "Cybersecurity lock symbol on a laptop",
-        lessons: [
-            {
-                id: 1,
-                title: "Threats and secure habits",
-                description: "Learn the everyday risks, attack patterns, and best practices used to keep digital systems safer.",
-                videoTitle: "Cybersecurity foundations",
-                videoUrl: "https://www.youtube.com/watch?v=5Q1dfB0YJm4",
-                duration: "14 min",
-            },
-        ],
-    },
-    {
-        id: 6,
-        title: "AI & Machine Learning Essentials",
-        topic: "AI & Machine Learning",
-        durationLabel: "22 hours",
-        level: "Beginner to intermediate",
-        instructor: "Ishita Rao",
-        wikimediaTitle: "Machine learning",
-        description: "Understand how machine learning models learn from data and solve real-world problems.",
-        overview: "Explore the complete machine learning lifecycle, from preparing data and choosing a model to evaluating results and explaining predictions.",
-        outcomes: ["Prepare data for machine learning models", "Choose classification and regression approaches", "Evaluate model performance responsibly", "Build a small end-to-end ML project"],
-        modules: ["AI concepts and Python foundations", "Data preparation and feature engineering", "Regression and classification", "Model evaluation and improvement", "Responsible AI and final project"],
-        image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=80",
-        alt: "Abstract artificial intelligence illustration",
-        lessons: [
-            {
-                id: 1,
-                title: "AI workflow and model thinking",
-                description: "Introduce the core lifecycle of training models and turning data into useful predictions.",
-                videoTitle: "Machine learning basics",
-                videoUrl: "https://www.youtube.com/watch?v=Gv9_4yMHFAM",
-                duration: "13 min",
-            },
-        ],
-    },
-    {
-        id: 7,
-        title: "Internet of Things Foundations",
-        topic: "IoT",
-        durationLabel: "15 hours",
-        level: "Beginner",
-        instructor: "Maya Nair",
-        wikimediaTitle: "Internet of things",
-        description: "Learn how connected devices collect, share, and act on data in real-world systems.",
-        overview: "Understand the building blocks of IoT, from sensors and connectivity to edge processing, cloud platforms, and secure device management.",
-        outcomes: ["Explain the parts of an IoT system", "Connect sensors to collect useful data", "Compare edge and cloud processing", "Apply basic IoT security practices"],
-        modules: ["IoT concepts and connected devices", "Sensors, gateways, and communication", "Edge computing and cloud platforms", "Data pipelines and device management", "Security and a smart home project"],
-        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80",
-        alt: "Electronic circuit board representing connected devices",
-        lessons: [
-            {
-                id: 1,
-                title: "Connected devices overview",
-                description: "Review how sensors, gateways, and cloud systems work together to create smart connected experiences.",
-                videoTitle: "What is IoT?",
-                videoUrl: "https://www.youtube.com/watch?v=LlhmzVL5bm8",
-                duration: "12 min",
-            },
-        ],
-    },
 ];
 
 const sanitizeLesson = (lesson = {}) => ({
@@ -246,268 +72,950 @@ app.get("/api/health", (req, res) => {
     res.json({ status: "ok", service: "learnly-api" });
 });
 
-app.get("/api/courses", (req, res) => {
-    res.json({
-        courses: courses.map((course) => ({
-            ...course,
-            lessons: course.lessons || [],
-        })),
-    });
-});
+app.get("/api/courses", async (req, res) => {
+    try {
+        const coursesResult = await pool.query(`
+            SELECT
+                id,
+                title,
+                topic,
+                duration_label,
+                level,
+                instructor,
+                wikimedia_title,
+                description,
+                overview,
+                image,
+                alt
+            FROM courses
+            ORDER BY id
+        `);
 
-app.get("/api/courses/:courseId", (req, res) => {
-    const course = courses.find((item) => String(item.id) === String(req.params.courseId));
+        const courses = [];
 
-    if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-    }
+        for (const course of coursesResult.rows) {
+            const modulesResult = await pool.query(
+                `SELECT title
+                 FROM modules
+                 WHERE course_id = $1
+                 ORDER BY module_order`,
+                [course.id]
+            );
 
-    return res.json({
-        course: {
-            ...course,
-            lessons: course.lessons || [],
-        },
-    });
-});
+            const outcomesResult = await pool.query(
+                `SELECT outcome
+                 FROM course_outcomes
+                 WHERE course_id = $1
+                 ORDER BY outcome_order`,
+                [course.id]
+            );
 
-app.post("/api/courses", (req, res) => {
-    const payload = req.body || {};
-    const title = String(payload.title || "").trim();
-    const topic = String(payload.topic || "").trim();
-    const description = String(payload.description || "").trim();
-    const overview = String(payload.overview || "").trim();
-    const instructor = String(payload.instructor || "").trim();
-    const durationLabel = String(payload.durationLabel || "").trim() || "New course";
-    const level = String(payload.level || "Beginner").trim();
-    const image = String(payload.image || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80").trim();
-    const alt = String(payload.alt || `${title} course`).trim();
+            const lessonsResult = await pool.query(
+                `SELECT
+                    id,
+                    title,
+                    description,
+                    video_title,
+                    video_url,
+                    duration
+                 FROM lessons
+                 WHERE course_id = $1
+                 ORDER BY lesson_order`,
+                [course.id]
+            );
 
-    if (!title || !topic || !description || !overview || !instructor) {
-        return res.status(400).json({
-            message: "Course title, topic, description, overview, and instructor are required.",
+            courses.push({
+                id: course.id,
+                title: course.title,
+                topic: course.topic,
+                durationLabel: course.duration_label,
+                level: course.level,
+                instructor: course.instructor,
+                wikimediaTitle: course.wikimedia_title,
+                description: course.description,
+                overview: course.overview,
+                image: course.image,
+                alt: course.alt,
+
+                modules: modulesResult.rows.map((item) => item.title),
+
+                outcomes: outcomesResult.rows.map((item) => item.outcome),
+
+                lessons: lessonsResult.rows.map((lesson) => ({
+                    id: lesson.id,
+                    title: lesson.title,
+                    description: lesson.description,
+                    videoTitle: lesson.video_title,
+                    videoUrl: lesson.video_url,
+                    duration: lesson.duration,
+                })),
+            });
+        }
+
+        return res.json({ courses });
+
+    } catch (error) {
+        console.error("Get courses error:", error);
+
+        return res.status(500).json({
+            message: "Unable to fetch courses",
         });
     }
-
-    const newCourse = {
-        id: Date.now(),
-        title,
-        topic,
-        durationLabel,
-        level,
-        instructor,
-        wikimediaTitle: topic,
-        description,
-        overview,
-        outcomes: Array.isArray(payload.outcomes) && payload.outcomes.length
-            ? payload.outcomes.map((item) => String(item).trim()).filter(Boolean)
-            : ["Learn the core concepts of this course", "Apply your learnings in a practical way", "Track your progress through the course modules"],
-        modules: sanitizeModules(payload.modules) || ["Module 1", "Module 2", "Module 3"],
-        image,
-        alt,
-        lessons: Array.isArray(payload.lessons)
-            ? payload.lessons.map(sanitizeLesson)
-            : [],
-    };
-
-    courses.push(newCourse);
-
-    return res.status(201).json({
-        message: "Course created successfully",
-        course: newCourse,
-    });
 });
 
-app.put("/api/courses/:courseId", (req, res) => {
-    const course = courses.find((item) => String(item.id) === String(req.params.courseId));
+app.get("/api/courses/:courseId", async (req, res) => {
+    try {
+        const courseResult = await pool.query(
+            `SELECT
+                id,
+                title,
+                topic,
+                duration_label,
+                level,
+                instructor,
+                wikimedia_title,
+                description,
+                overview,
+                image,
+                alt
+             FROM courses
+             WHERE id = $1`,
+            [req.params.courseId]
+        );
 
-    if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-    }
+        if (courseResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Course not found",
+            });
+        }
 
-    const payload = req.body || {};
-    const title = String(payload.title || "").trim();
-    const topic = String(payload.topic || "").trim();
-    const description = String(payload.description || "").trim();
-    const overview = String(payload.overview || "").trim();
-    const instructor = String(payload.instructor || "").trim();
+        const course = courseResult.rows[0];
 
-    if (!title || !topic || !description || !overview || !instructor) {
-        return res.status(400).json({
-            message: "Course title, topic, description, overview, and instructor are required.",
+        const modulesResult = await pool.query(
+            `SELECT title
+             FROM modules
+             WHERE course_id = $1
+             ORDER BY module_order`,
+            [course.id]
+        );
+
+        const outcomesResult = await pool.query(
+            `SELECT outcome
+             FROM course_outcomes
+             WHERE course_id = $1
+             ORDER BY outcome_order`,
+            [course.id]
+        );
+
+        const lessonsResult = await pool.query(
+            `SELECT
+                id,
+                title,
+                description,
+                video_title,
+                video_url,
+                duration
+             FROM lessons
+             WHERE course_id = $1
+             ORDER BY lesson_order`,
+            [course.id]
+        );
+
+        return res.json({
+            course: {
+                id: course.id,
+                title: course.title,
+                topic: course.topic,
+                durationLabel: course.duration_label,
+                level: course.level,
+                instructor: course.instructor,
+                wikimediaTitle: course.wikimedia_title,
+                description: course.description,
+                overview: course.overview,
+                image: course.image,
+                alt: course.alt,
+
+                modules: modulesResult.rows.map((item) => item.title),
+
+                outcomes: outcomesResult.rows.map((item) => item.outcome),
+
+                lessons: lessonsResult.rows.map((lesson) => ({
+                    id: lesson.id,
+                    title: lesson.title,
+                    description: lesson.description,
+                    videoTitle: lesson.video_title,
+                    videoUrl: lesson.video_url,
+                    duration: lesson.duration,
+                })),
+            },
+        });
+
+    } catch (error) {
+        console.error("Get course error:", error);
+
+        return res.status(500).json({
+            message: "Unable to fetch course",
         });
     }
-
-    Object.assign(course, {
-        title,
-        topic,
-        durationLabel: String(payload.durationLabel || "New course").trim(),
-        level: String(payload.level || "Beginner").trim(),
-        instructor,
-        wikimediaTitle: topic,
-        description,
-        overview,
-        image: String(payload.image || course.image).trim(),
-        alt: String(payload.alt || `${title} course`).trim(),
-        modules: sanitizeModules(payload.modules),
-    });
-
-    return res.json({
-        message: "Course updated successfully",
-        course,
-    });
 });
 
-app.post("/api/courses/:courseId/content", (req, res) => {
-    const course = courses.find((item) => String(item.id) === String(req.params.courseId));
-    const { title, description, videoTitle, videoUrl, duration } = req.body || {};
+app.post("/api/courses", async (req, res) => {
+    const client = await pool.connect();
 
-    if (!course) {
-        return res.status(404).json({ message: "Course not found" });
+    try {
+        const payload = req.body || {};
+
+        const title = String(payload.title || "").trim();
+        const topic = String(payload.topic || "").trim();
+        const description = String(payload.description || "").trim();
+        const overview = String(payload.overview || "").trim();
+        const instructor = String(payload.instructor || "").trim();
+
+        const durationLabel =
+            String(payload.durationLabel || "").trim() || "New course";
+
+        const level =
+            String(payload.level || "Beginner").trim();
+
+        const image =
+            String(
+                payload.image ||
+                "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80"
+            ).trim();
+
+        const alt =
+            String(payload.alt || `${title} course`).trim();
+
+        if (!title || !topic || !description || !overview || !instructor) {
+            return res.status(400).json({
+                message:
+                    "Course title, topic, description, overview, and instructor are required.",
+            });
+        }
+
+        await client.query("BEGIN");
+
+        const courseResult = await client.query(
+            `INSERT INTO courses
+                (
+                    title,
+                    topic,
+                    duration_label,
+                    level,
+                    instructor,
+                    wikimedia_title,
+                    description,
+                    overview,
+                    image,
+                    alt
+                )
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+             RETURNING id`,
+            [
+                title,
+                topic,
+                durationLabel,
+                level,
+                instructor,
+                topic,
+                description,
+                overview,
+                image,
+                alt,
+            ]
+        );
+
+        const courseId = courseResult.rows[0].id;
+
+        const outcomes =
+            Array.isArray(payload.outcomes) && payload.outcomes.length
+                ? payload.outcomes
+                      .map((item) => String(item).trim())
+                      .filter(Boolean)
+                : [
+                      "Learn the core concepts of this course",
+                      "Apply your learnings in a practical way",
+                      "Track your progress through the course modules",
+                  ];
+
+        for (let i = 0; i < outcomes.length; i++) {
+            await client.query(
+                `INSERT INTO course_outcomes
+                    (course_id, outcome, outcome_order)
+                 VALUES ($1, $2, $3)`,
+                [courseId, outcomes[i], i + 1]
+            );
+        }
+
+        const modules =
+            sanitizeModules(payload.modules) ||
+            ["Module 1", "Module 2", "Module 3"];
+
+        for (let i = 0; i < modules.length; i++) {
+            await client.query(
+                `INSERT INTO modules
+                    (course_id, title, module_order)
+                 VALUES ($1, $2, $3)`,
+                [courseId, modules[i], i + 1]
+            );
+        }
+
+        if (Array.isArray(payload.lessons)) {
+            for (let i = 0; i < payload.lessons.length; i++) {
+                const lesson = sanitizeLesson(payload.lessons[i]);
+
+                await client.query(
+                    `INSERT INTO lessons
+                        (
+                            course_id,
+                            title,
+                            description,
+                            video_title,
+                            video_url,
+                            duration,
+                            lesson_order
+                        )
+                     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+                    [
+                        courseId,
+                        lesson.title,
+                        lesson.description,
+                        lesson.videoTitle,
+                        lesson.videoUrl,
+                        lesson.duration,
+                        i + 1,
+                    ]
+                );
+            }
+        }
+
+        await client.query("COMMIT");
+
+        return res.status(201).json({
+            message: "Course created successfully",
+            courseId,
+        });
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+
+        console.error("Create course error:", error);
+
+        return res.status(500).json({
+            message: "Unable to create course",
+        });
+
+    } finally {
+        client.release();
     }
+});
 
-    if (!title || !description || !videoTitle || !videoUrl || !duration) {
-        return res.status(400).json({
-            message: "Title, description, video title, video URL, and duration are required",
+app.put("/api/courses/:courseId", async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const courseId = req.params.courseId;
+        const payload = req.body || {};
+
+        const title = String(payload.title || "").trim();
+        const topic = String(payload.topic || "").trim();
+        const description = String(payload.description || "").trim();
+        const overview = String(payload.overview || "").trim();
+        const instructor = String(payload.instructor || "").trim();
+
+        if (!title || !topic || !description || !overview || !instructor) {
+            return res.status(400).json({
+                message:
+                    "Course title, topic, description, overview, and instructor are required.",
+            });
+        }
+
+        const durationLabel =
+            String(payload.durationLabel || "New course").trim();
+
+        const level =
+            String(payload.level || "Beginner").trim();
+
+        const image =
+            String(payload.image || "").trim();
+
+        const alt =
+            String(payload.alt || `${title} course`).trim();
+
+        await client.query("BEGIN");
+
+        // Check course exists
+        const existingCourse = await client.query(
+            `SELECT id
+             FROM courses
+             WHERE id = $1`,
+            [courseId]
+        );
+
+        if (existingCourse.rows.length === 0) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                message: "Course not found",
+            });
+        }
+
+        // Update main course
+        await client.query(
+            `UPDATE courses
+             SET
+                title = $1,
+                topic = $2,
+                duration_label = $3,
+                level = $4,
+                instructor = $5,
+                wikimedia_title = $6,
+                description = $7,
+                overview = $8,
+                image = $9,
+                alt = $10
+             WHERE id = $11`,
+            [
+                title,
+                topic,
+                durationLabel,
+                level,
+                instructor,
+                topic,
+                description,
+                overview,
+                image,
+                alt,
+                courseId,
+            ]
+        );
+
+        // Update modules
+        if (Array.isArray(payload.modules)) {
+            await client.query(
+                `DELETE FROM modules
+                 WHERE course_id = $1`,
+                [courseId]
+            );
+
+            const modules = sanitizeModules(payload.modules) || [];
+
+            for (let i = 0; i < modules.length; i++) {
+                await client.query(
+                    `INSERT INTO modules
+                        (course_id, title, module_order)
+                     VALUES ($1, $2, $3)`,
+                    [courseId, modules[i], i + 1]
+                );
+            }
+        }
+
+        // Update outcomes
+        if (Array.isArray(payload.outcomes)) {
+            await client.query(
+                `DELETE FROM course_outcomes
+                 WHERE course_id = $1`,
+                [courseId]
+            );
+
+            const outcomes = payload.outcomes
+                .map((item) => String(item).trim())
+                .filter(Boolean);
+
+            for (let i = 0; i < outcomes.length; i++) {
+                await client.query(
+                    `INSERT INTO course_outcomes
+                        (course_id, outcome, outcome_order)
+                     VALUES ($1, $2, $3)`,
+                    [courseId, outcomes[i], i + 1]
+                );
+            }
+        }
+
+        await client.query("COMMIT");
+
+        // Return the updated course using the same API structure
+        const updatedCourseResult = await pool.query(
+            `SELECT
+                id,
+                title,
+                topic,
+                duration_label,
+                level,
+                instructor,
+                wikimedia_title,
+                description,
+                overview,
+                image,
+                alt
+             FROM courses
+             WHERE id = $1`,
+            [courseId]
+        );
+
+        const course = updatedCourseResult.rows[0];
+
+        const modulesResult = await pool.query(
+            `SELECT title
+             FROM modules
+             WHERE course_id = $1
+             ORDER BY module_order`,
+            [courseId]
+        );
+
+        const outcomesResult = await pool.query(
+            `SELECT outcome
+             FROM course_outcomes
+             WHERE course_id = $1
+             ORDER BY outcome_order`,
+            [courseId]
+        );
+
+        const lessonsResult = await pool.query(
+            `SELECT
+                id,
+                title,
+                description,
+                video_title,
+                video_url,
+                duration
+             FROM lessons
+             WHERE course_id = $1
+             ORDER BY lesson_order`,
+            [courseId]
+        );
+
+        return res.json({
+            message: "Course updated successfully",
+            course: {
+                id: course.id,
+                title: course.title,
+                topic: course.topic,
+                durationLabel: course.duration_label,
+                level: course.level,
+                instructor: course.instructor,
+                wikimediaTitle: course.wikimedia_title,
+                description: course.description,
+                overview: course.overview,
+                image: course.image,
+                alt: course.alt,
+
+                modules: modulesResult.rows.map(
+                    (item) => item.title
+                ),
+
+                outcomes: outcomesResult.rows.map(
+                    (item) => item.outcome
+                ),
+
+                lessons: lessonsResult.rows.map((lesson) => ({
+                    id: lesson.id,
+                    title: lesson.title,
+                    description: lesson.description,
+                    videoTitle: lesson.video_title,
+                    videoUrl: lesson.video_url,
+                    duration: lesson.duration,
+                })),
+            },
+        });
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+
+        console.error("Update course error:", error);
+
+        return res.status(500).json({
+            message: "Unable to update course",
+        });
+
+    } finally {
+        client.release();
+    }
+});
+
+app.post("/api/courses/:courseId/content", async (req, res) => {
+    try {
+        const courseId = req.params.courseId;
+
+        const {
+            title,
+            description,
+            videoTitle,
+            videoUrl,
+            duration,
+        } = req.body || {};
+
+        if (!title || !description || !videoTitle || !videoUrl || !duration) {
+            return res.status(400).json({
+                message:
+                    "Title, description, video title, video URL, and duration are required",
+            });
+        }
+
+        // Check course exists
+        const courseResult = await pool.query(
+            `SELECT id, title
+             FROM courses
+             WHERE id = $1`,
+            [courseId]
+        );
+
+        if (courseResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Course not found",
+            });
+        }
+
+        // Find next lesson order
+        const orderResult = await pool.query(
+            `SELECT COALESCE(MAX(lesson_order), 0) + 1 AS next_order
+             FROM lessons
+             WHERE course_id = $1`,
+            [courseId]
+        );
+
+        const lessonOrder = orderResult.rows[0].next_order;
+
+        // Insert lesson
+        const lessonResult = await pool.query(
+            `INSERT INTO lessons
+                (
+                    course_id,
+                    title,
+                    description,
+                    video_title,
+                    video_url,
+                    duration,
+                    lesson_order
+                )
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING
+                id,
+                title,
+                description,
+                video_title,
+                video_url,
+                duration,
+                lesson_order`,
+            [
+                courseId,
+                String(title).trim(),
+                String(description).trim(),
+                String(videoTitle).trim(),
+                String(videoUrl).trim(),
+                String(duration).trim(),
+                lessonOrder,
+            ]
+        );
+
+        const lesson = lessonResult.rows[0];
+
+        return res.status(201).json({
+            message: "Lesson added successfully",
+            courseTitle: courseResult.rows[0].title,
+            lesson: {
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.description,
+                videoTitle: lesson.video_title,
+                videoUrl: lesson.video_url,
+                duration: lesson.duration,
+            },
+        });
+
+    } catch (error) {
+        console.error("Add lesson error:", error);
+
+        return res.status(500).json({
+            message: "Unable to add lesson",
         });
     }
-
-    const lesson = sanitizeLesson({
-        id: Date.now(),
-        title,
-        description,
-        videoTitle,
-        videoUrl,
-        duration,
-    });
-
-    course.lessons = Array.isArray(course.lessons) ? [...course.lessons, lesson] : [lesson];
-
-    return res.status(201).json({
-        message: "Lesson added successfully",
-        courseTitle: course.title,
-        lesson,
-        course,
-    });
 });
 
-app.put("/api/courses/:courseId/content/:lessonId", (req, res) => {
-    const course = courses.find((item) => String(item.id) === String(req.params.courseId));
+app.put("/api/courses/:courseId/content/:lessonId", async (req, res) => {
+    try {
+        const { courseId, lessonId } = req.params;
 
-    if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-    }
+        const {
+            title,
+            description,
+            videoTitle,
+            videoUrl,
+            duration,
+        } = req.body || {};
 
-    const lessonIndex = course.lessons.findIndex(
-        (lesson) => String(lesson.id) === String(req.params.lessonId),
-    );
+        if (!title || !description || !videoTitle || !videoUrl || !duration) {
+            return res.status(400).json({
+                message:
+                    "Title, description, video title, video URL, and duration are required",
+            });
+        }
 
-    if (lessonIndex === -1) {
-        return res.status(404).json({ message: "Lesson not found" });
-    }
+        // Check that the lesson exists AND belongs to this course
+        const existingLesson = await pool.query(
+            `SELECT
+                l.id,
+                l.course_id,
+                c.title AS course_title
+             FROM lessons l
+             JOIN courses c ON c.id = l.course_id
+             WHERE l.id = $1
+               AND l.course_id = $2`,
+            [lessonId, courseId]
+        );
 
-    const { title, description, videoTitle, videoUrl, duration } = req.body || {};
+        if (existingLesson.rows.length === 0) {
+            return res.status(404).json({
+                message: "Lesson not found",
+            });
+        }
 
-    if (!title || !description || !videoTitle || !videoUrl || !duration) {
-        return res.status(400).json({
-            message: "Title, description, video title, video URL, and duration are required",
+        // Update lesson in PostgreSQL
+        const result = await pool.query(
+            `UPDATE lessons
+             SET
+                title = $1,
+                description = $2,
+                video_title = $3,
+                video_url = $4,
+                duration = $5
+             WHERE id = $6
+               AND course_id = $7
+             RETURNING
+                id,
+                title,
+                description,
+                video_title,
+                video_url,
+                duration`,
+            [
+                String(title).trim(),
+                String(description).trim(),
+                String(videoTitle).trim(),
+                String(videoUrl).trim(),
+                String(duration).trim(),
+                lessonId,
+                courseId,
+            ]
+        );
+
+        const lesson = result.rows[0];
+
+        return res.json({
+            message: "Lesson updated successfully",
+            courseTitle: existingLesson.rows[0].course_title,
+            lesson: {
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.description,
+                videoTitle: lesson.video_title,
+                videoUrl: lesson.video_url,
+                duration: lesson.duration,
+            },
+        });
+
+    } catch (error) {
+        console.error("Update lesson error:", error);
+
+        return res.status(500).json({
+            message: "Unable to update lesson",
         });
     }
-
-    course.lessons[lessonIndex] = sanitizeLesson({
-        id: course.lessons[lessonIndex].id,
-        title,
-        description,
-        videoTitle,
-        videoUrl,
-        duration,
-    });
-
-    return res.json({
-        message: "Lesson updated successfully",
-        courseTitle: course.title,
-        lesson: course.lessons[lessonIndex],
-        course,
-    });
 });
 
-app.post("/api/auth/register", (req, res) => {
-    const {
-        name,
-        email,
-        password,
-        courseInterest,
-        city,
-        location,
-        role,
-    } = req.body;
+app.post("/api/auth/register", async (req, res) => {
+    try {
+        const {
+            name,
+            email,
+            password,
+            courseInterest,
+            city,
+            location,
+            role,
+        } = req.body;
 
-    if (!name || !email || !password || !courseInterest || !city || !location) {
-        return res.status(400).json({
-            message: "Name, email, password, course interest, city, and location are required",
+        if (!name || !email || !password || !courseInterest || !city || !location) {
+            return res.status(400).json({
+                message:
+                    "Name, email, password, course interest, city, and location are required",
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Check if the email already exists in PostgreSQL
+        const existingUser = await pool.query(
+            "SELECT id FROM users WHERE email = $1",
+            [normalizedEmail]
+        );
+
+        if (existingUser.rows.length > 0) {
+            return res.status(409).json({
+                message: "An account with this email already exists",
+            });
+        }
+
+        // Never store the actual password
+        const passwordHash = await bcrypt.hash(password, 12);
+
+        const userRole =
+            role === "instructor" ? "instructor" : "learner";
+
+        const result = await pool.query(
+            `INSERT INTO users
+                (
+                    name,
+                    email,
+                    password_hash,
+                    course_interest,
+                    city,
+                    location,
+                    role
+                )
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING
+                id,
+                name,
+                email,
+                course_interest,
+                city,
+                location,
+                role,
+                created_at`,
+            [
+                name.trim(),
+                normalizedEmail,
+                passwordHash,
+                courseInterest,
+                city.trim(),
+                location.trim(),
+                userRole,
+            ]
+        );
+
+        const user = result.rows[0];
+
+        return res.status(201).json({
+            message: "Account created successfully",
+            user: publicUser(user),
+        });
+    } catch (error) {
+        console.error("Registration error:", error);
+
+        return res.status(500).json({
+            message: "Unable to create account",
         });
     }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    const existingUser = users.find((user) => user.email === normalizedEmail);
-
-    if (existingUser) {
-        return res.status(409).json({ message: "An account with this email already exists" });
-    }
-
-    const user = {
-        id: users.length + 1,
-        name: name.trim(),
-        email: normalizedEmail,
-        password,
-        courseInterest,
-        city: city.trim(),
-        location: location.trim(),
-        role: role === "instructor" ? "instructor" : "learner",
-        progress: [],
-    };
-
-    users.push(user);
-
-    return res.status(201).json({
-        message: "Account created successfully",
-        user: publicUser(user),
-    });
 });
 
-app.post("/api/auth/login", (req, res) => {
-    const { email, password, role } = req.body;
-    const user = users.find(
-        (candidate) => candidate.email === email?.trim().toLowerCase(),
-    );
 
-    if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid email or password" });
-    }
+app.post("/api/auth/login", async (req, res) => {
+    try {
+        const { email, password, role } = req.body;
 
-    const requestedRole = role === "instructor" ? "instructor" : "learner";
-    if (user.role !== requestedRole) {
-        return res.status(403).json({
-            message: `This account is registered as a ${user.role}. Please sign in as the correct role.`,
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Email and password are required",
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        const result = await pool.query(
+            `SELECT
+                id,
+                name,
+                email,
+                password_hash,
+                course_interest,
+                city,
+                location,
+                role,
+                created_at
+             FROM users
+             WHERE email = $1`,
+            [normalizedEmail]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
+
+        const user = result.rows[0];
+
+        const passwordMatches = await bcrypt.compare(
+            password,
+            user.password_hash
+        );
+
+        if (!passwordMatches) {
+            return res.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
+
+        const requestedRole =
+            role === "instructor" ? "instructor" : "learner";
+
+        if (user.role !== requestedRole) {
+            return res.status(403).json({
+                message: `This account is registered as a ${user.role}. Please sign in as the correct role.`,
+            });
+        }
+
+        return res.json({
+            message: "Signed in successfully",
+            user: publicUser(user),
+        });
+    } catch (error) {
+        console.error("Login error:", error);
+
+        return res.status(500).json({
+            message: "Unable to sign in",
         });
     }
-
-    return res.json({
-        message: "Signed in successfully",
-        user: publicUser(user),
-    });
 });
 
-app.get("/api/account/:userId", (req, res) => {
-    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
 
-    if (!user) {
-        return res.status(404).json({ message: "Account not found" });
+app.get("/api/account/:userId", async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT
+                id,
+                name,
+                email,
+                course_interest,
+                city,
+                location,
+                role,
+                created_at
+             FROM users
+             WHERE id = $1`,
+            [req.params.userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Account not found",
+            });
+        }
+
+        const user = result.rows[0];
+
+        return res.json({
+            user: publicUser(user),
+            watchedCourses: [],
+        });
+    } catch (error) {
+        console.error("Account error:", error);
+
+        return res.status(500).json({
+            message: "Unable to fetch account",
+        });
     }
-
-    return res.json({
-        user: publicUser(user),
-        watchedCourses: getWatchedCourses(user),
-    });
 });
 
 app.post("/api/account/:userId/progress", (req, res) => {
@@ -544,8 +1052,17 @@ app.post("/api/account/:userId/progress", (req, res) => {
 });
 
 function publicUser(user) {
-    const { password, ...safeUser } = user;
-    return safeUser;
+    return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        courseInterest: user.course_interest,
+        city: user.city,
+        location: user.location,
+        role: user.role,
+        createdAt: user.created_at,
+        progress: [],
+    };
 }
 
 function getWatchedCourses(user) {
