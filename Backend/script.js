@@ -6,7 +6,7 @@ const pool = require("./db");
 const app = express();
 const PORT = process.env.PORT || 5001;
 const defaultCourses = require("./courseData");
-const users = [];
+
 const topicOptions = [
     "AI & Machine Learning",
     "Cybersecurity",
@@ -35,13 +35,6 @@ const sanitizeModules = (modules) => {
 
     return [];
 };
-
-const courses = defaultCourses.map((course) => ({
-    ...course,
-    lessons: Array.isArray(course.lessons) ? course.lessons.map(sanitizeLesson) : [],
-    modules: sanitizeModules(course.modules),
-    outcomes: Array.isArray(course.outcomes) ? course.outcomes : [],
-}));
 
 app.use(express.json());
 
@@ -982,7 +975,8 @@ app.post("/api/auth/login", async (req, res) => {
 
 app.get("/api/account/:userId", async (req, res) => {
     try {
-        const result = await pool.query(
+        // Get user
+        const userResult = await pool.query(
             `SELECT
                 id,
                 name,
@@ -997,18 +991,74 @@ app.get("/api/account/:userId", async (req, res) => {
             [req.params.userId]
         );
 
-        if (result.rows.length === 0) {
+        if (userResult.rows.length === 0) {
             return res.status(404).json({
                 message: "Account not found",
             });
         }
 
-        const user = result.rows[0];
+        const user = userResult.rows[0];
+
+        // Get course progress
+        const progressResult = await pool.query(
+            `SELECT
+            c.id AS course_id,
+            c.title AS course_title,
+
+            (
+                SELECT COUNT(*)
+                FROM lessons l
+                WHERE l.course_id = c.id
+            )::int AS total_lessons,
+
+            (
+                SELECT COUNT(*)
+                FROM progress p2
+                WHERE p2.user_id = $1
+                AND p2.course_id = c.id
+                AND p2.watched = true
+            )::int AS completed_lessons,
+
+            MAX(p.updated_at) AS updated_at
+
+            FROM progress p
+            JOIN courses c
+                ON c.id = p.course_id
+
+            WHERE p.user_id = $1
+
+            GROUP BY c.id, c.title
+
+            ORDER BY MAX(p.updated_at) DESC`,
+            [req.params.userId]
+        );
+
+        const watchedCourses = progressResult.rows.map((course) => {
+            const totalLessons = course.total_lessons;
+            const completedLessons = course.completed_lessons;
+
+            const percentage =
+                totalLessons === 0
+                    ? 0
+                    : Math.round(
+                        (completedLessons / totalLessons) * 100
+                    );
+
+            return {
+                courseId: course.course_id,
+                courseTitle: course.course_title,
+                totalLessons,
+                completedLessons,
+                percentage,
+                updatedAt: course.updated_at,
+            };
+        });
 
         return res.json({
             user: publicUser(user),
-            watchedCourses: [],
+            watchedCourses,
         });
+
     } catch (error) {
         console.error("Account error:", error);
 
@@ -1018,37 +1068,172 @@ app.get("/api/account/:userId", async (req, res) => {
     }
 });
 
-app.post("/api/account/:userId/progress", (req, res) => {
-    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
-    const course = courses.find((item) => String(item.id) === String(req.body?.courseId));
-    const lesson = course?.lessons?.find((item) => String(item.id) === String(req.body?.lessonId));
+app.post("/api/account/:userId/progress", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const { courseId, lessonId, watched } = req.body || {};
 
-    if (!user || !course || !lesson) {
-        return res.status(404).json({ message: "Course, lesson, or account not found" });
-    }
+        if (!courseId || !lessonId) {
+            return res.status(400).json({
+                message: "courseId and lessonId are required",
+            });
+        }
 
-    user.progress = Array.isArray(user.progress) ? user.progress : [];
-    const existingProgress = user.progress.find(
-        (item) => String(item.courseId) === String(course.id) && String(item.lessonId) === String(lesson.id),
-    );
+        // Check user
+        const userResult = await pool.query(
+            `SELECT id
+             FROM users
+             WHERE id = $1`,
+            [userId]
+        );
 
-    if (existingProgress) {
-        existingProgress.watched = Boolean(req.body.watched);
-        existingProgress.updatedAt = new Date().toISOString();
-    } else {
-        user.progress.push({
-            courseId: course.id,
-            lessonId: lesson.id,
-            watched: Boolean(req.body.watched),
-            updatedAt: new Date().toISOString(),
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Account not found",
+            });
+        }
+
+        // Check course
+        const courseResult = await pool.query(
+            `SELECT id, title
+             FROM courses
+             WHERE id = $1`,
+            [courseId]
+        );
+
+        if (courseResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Course not found",
+            });
+        }
+
+        // Check lesson belongs to this course
+        const lessonResult = await pool.query(
+            `SELECT id, title
+             FROM lessons
+             WHERE id = $1
+               AND course_id = $2`,
+            [lessonId, courseId]
+        );
+
+        if (lessonResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Lesson not found for this course",
+            });
+        }
+
+        // Insert or update progress
+        const progressResult = await pool.query(
+            `INSERT INTO progress
+                (user_id, course_id, lesson_id, watched, updated_at)
+             VALUES ($1, $2, $3, $4, NOW())
+             ON CONFLICT (user_id, course_id, lesson_id)
+             DO UPDATE SET
+                watched = EXCLUDED.watched,
+                updated_at = NOW()
+             RETURNING
+                id,
+                user_id,
+                course_id,
+                lesson_id,
+                watched,
+                updated_at`,
+            [
+                userId,
+                courseId,
+                lessonId,
+                Boolean(watched),
+            ]
+        );
+
+        return res.json({
+            message: "Progress saved",
+            progress: progressResult.rows[0],
+        });
+
+    } catch (error) {
+        console.error("Save progress error:", error);
+
+        return res.status(500).json({
+            message: "Unable to save progress",
         });
     }
+});
 
-    return res.json({
-        message: "Progress saved",
-        progress: user.progress,
-        watchedCourses: getWatchedCourses(user),
-    });
+app.get("/api/account/:userId/progress", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        const result = await pool.query(
+            `SELECT
+                p.id,
+                p.user_id,
+                p.course_id,
+                p.lesson_id,
+                p.watched,
+                p.updated_at,
+                c.title AS course_title,
+                l.title AS lesson_title
+             FROM progress p
+             JOIN courses c ON c.id = p.course_id
+             JOIN lessons l ON l.id = p.lesson_id
+             WHERE p.user_id = $1
+             ORDER BY p.updated_at DESC`,
+            [userId]
+        );
+
+        return res.json({
+            progress: result.rows,
+        });
+
+    } catch (error) {
+        console.error("Get progress error:", error);
+
+        return res.status(500).json({
+            message: "Unable to fetch progress",
+        });
+    }
+});
+
+app.get("/api/account/:userId/courses/:courseId/progress", async (req, res) => {
+    try {
+        const { userId, courseId } = req.params;
+
+        const result = await pool.query(
+            `SELECT
+                COUNT(l.id)::int AS total_lessons,
+                COUNT(p.lesson_id) FILTER (WHERE p.watched = true)::int AS completed_lessons
+             FROM lessons l
+             LEFT JOIN progress p
+                ON p.lesson_id = l.id
+                AND p.course_id = l.course_id
+                AND p.user_id = $1
+             WHERE l.course_id = $2`,
+            [userId, courseId]
+        );
+
+        const totalLessons = result.rows[0].total_lessons;
+        const completedLessons = result.rows[0].completed_lessons;
+
+        const percentage =
+            totalLessons === 0
+                ? 0
+                : Math.round((completedLessons / totalLessons) * 100);
+
+        return res.json({
+            courseId: Number(courseId),
+            totalLessons,
+            completedLessons,
+            percentage,
+        });
+
+    } catch (error) {
+        console.error("Get course progress error:", error);
+
+        return res.status(500).json({
+            message: "Unable to calculate course progress",
+        });
+    }
 });
 
 function publicUser(user) {
@@ -1061,21 +1246,7 @@ function publicUser(user) {
         location: user.location,
         role: user.role,
         createdAt: user.created_at,
-        progress: [],
     };
-}
-
-function getWatchedCourses(user) {
-    return (user.progress || [])
-        .filter((progress) => progress.watched)
-        .map((progress) => {
-            const course = courses.find((item) => String(item.id) === String(progress.courseId));
-            const lesson = course?.lessons?.find((item) => String(item.id) === String(progress.lessonId));
-            return course && lesson
-                ? { courseId: course.id, courseTitle: course.title, lessonId: lesson.id, lessonTitle: lesson.title, updatedAt: progress.updatedAt }
-                : null;
-        })
-        .filter(Boolean);
 }
 
 app.use((req, res) => {
