@@ -1,30 +1,12 @@
-const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
-const fs = require("fs");
+
+const bcrypt = require("bcrypt");
+const pool = require("./db");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-const usersFile = path.join(__dirname, "users.json");
+const PORT = process.env.PORT || 5001;
+const defaultCourses = require("./courseData");
 
-function loadUsers() {
-    try {
-        const savedUsers = JSON.parse(fs.readFileSync(usersFile, "utf8"));
-        return Array.isArray(savedUsers) ? savedUsers : [];
-    } catch (error) {
-        if (error.code !== "ENOENT") {
-            console.warn("Unable to read users.json. Starting with an empty user list.");
-        }
-
-        return [];
-    }
-}
-
-function saveUsers() {
-    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
-}
-
-const users = loadUsers();
 const topicOptions = [
     "AI & Machine Learning",
     "Cybersecurity",
@@ -35,184 +17,6 @@ const topicOptions = [
     "IoT",
     "Business",
     "Design",
-];
-
-const defaultCourses = [
-    {
-        id: 1,
-        title: "DevOps A to Z Mastery",
-        topic: "Cloud & DevOps",
-        durationLabel: "18 hours",
-        level: "Intermediate",
-        instructor: "Aarav Mehta",
-        wikimediaTitle: "DevOps",
-        description: "Build reliable delivery pipelines with AWS, Docker, Kubernetes, and CI/CD.",
-        overview: "Move from local development to confident production releases by learning how modern DevOps teams plan, automate, deploy, and monitor software.",
-        outcomes: ["Create automated CI/CD pipelines", "Containerize applications with Docker", "Deploy and scale services with Kubernetes", "Monitor releases and troubleshoot failures"],
-        modules: ["DevOps foundations and Git workflows", "Linux, networking, and scripting essentials", "Docker images and container orchestration", "AWS deployment fundamentals", "Kubernetes, CI/CD, and observability"],
-        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFlJeP0kRB8US7NhL2F6YBAlhJMjzPIdLNqWt-F5NOaQ&s=10",
-        alt: "DevOps tools and workflow",
-        lessons: [
-            {
-                id: 1,
-                title: "Git and release workflows",
-                description: "Understand source control, collaborative release patterns, and how teams ship stable software with confidence.",
-                videoTitle: "Git basics for DevOps",
-                videoUrl: "https://www.youtube.com/watch?v=RGOj5yH7evk",
-                duration: "12 min",
-            },
-        ],
-    },
-    {
-        id: 2,
-        title: "Java Full-Stack",
-        topic: "Development",
-        durationLabel: "24 hours",
-        level: "Intermediate",
-        instructor: "Priya Sharma",
-        wikimediaTitle: "Java (programming language)",
-        description: "Create production-ready applications with Java, Spring Boot, Hibernate, and Maven.",
-        overview: "Build a complete web application from a clean Java backend to a responsive frontend, with persistence, authentication, testing, and deployment included.",
-        outcomes: ["Build REST APIs with Spring Boot", "Persist data with Hibernate and SQL", "Connect frontend and backend applications", "Test and package production services"],
-        modules: ["Java and object-oriented programming", "Spring Boot and REST API design", "Databases, JPA, and Hibernate", "Frontend integration and authentication", "Testing, Maven, and deployment"],
-        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCO3jvxn3ABmRI8o9QvKKjf0rpNL0ejFjOH_APyxCWbQ&s=10",
-        alt: "Java programming code",
-        lessons: [
-            {
-                id: 1,
-                title: "Java foundations and OOP",
-                description: "Review object-oriented programming and the fundamentals that make Java applications scalable and maintainable.",
-                videoTitle: "Java OOP explained",
-                videoUrl: "https://www.youtube.com/watch?v=8cm1x4bC610",
-                duration: "15 min",
-            },
-        ],
-    },
-    {
-        id: 3,
-        title: "DSA Complete",
-        topic: "Computer Science",
-        durationLabel: "14 hours",
-        level: "Beginner to intermediate",
-        instructor: "Rohan Kapoor",
-        wikimediaTitle: "Data structure",
-        description: "Strengthen problem-solving skills through graphs, heaps, stacks, and dynamic programming.",
-        overview: "Develop the structured thinking needed for technical interviews and real software by mastering core data structures and algorithmic patterns.",
-        outcomes: ["Choose the right data structure for a problem", "Analyze time and space complexity", "Solve graph and tree problems", "Apply dynamic programming patterns"],
-        modules: ["Complexity analysis and arrays", "Linked lists, stacks, and queues", "Trees, heaps, and hash tables", "Graphs and traversal algorithms", "Sorting, searching, and dynamic programming"],
-        image: "https://miro.medium.com/0*TazBnJw1_YH1ibTx",
-        alt: "Data structures and algorithms",
-        lessons: [
-            {
-                id: 1,
-                title: "Time complexity and arrays",
-                description: "Learn how to analyze performance and choose efficient patterns when solving technical problems.",
-                videoTitle: "Big O explained",
-                videoUrl: "https://www.youtube.com/watch?v=V6mKVRU1evU",
-                duration: "10 min",
-            },
-        ],
-    },
-    {
-        id: 4,
-        title: "Practical Data Analytics",
-        topic: "Data Analytics",
-        durationLabel: "16 hours",
-        level: "Beginner to intermediate",
-        instructor: "Neha Verma",
-        wikimediaTitle: "Data analysis",
-        description: "Turn raw information into useful decisions with SQL, spreadsheets, Python, and dashboards.",
-        overview: "Learn a practical analysis workflow that takes you from messy data to clear insights, compelling visualizations, and confident business recommendations.",
-        outcomes: ["Clean and prepare datasets for analysis", "Write SQL queries for useful insights", "Build clear charts and dashboards", "Explain findings with data-driven stories"],
-        modules: ["Data analysis workflow and spreadsheets", "SQL queries and relational data", "Python with pandas for analysis", "Charts, dashboards, and reporting", "Projects and communicating insights"],
-        image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80",
-        alt: "Data analytics dashboard on a screen",
-        lessons: [
-            {
-                id: 1,
-                title: "Working with datasets",
-                description: "Explore how to clean messy data and prepare it for reliable analysis and reporting.",
-                videoTitle: "Data cleaning in practice",
-                videoUrl: "https://www.youtube.com/watch?v=U4c2pYt3RZ8",
-                duration: "11 min",
-            },
-        ],
-    },
-    {
-        id: 5,
-        title: "Cybersecurity Fundamentals",
-        topic: "Cybersecurity",
-        durationLabel: "20 hours",
-        level: "Beginner",
-        instructor: "Kabir Singh",
-        wikimediaTitle: "Computer security",
-        description: "Learn the essential practices used to protect accounts, networks, applications, and data.",
-        overview: "Build a strong security mindset through hands-on foundations in threats, identity, encryption, network defense, and incident response.",
-        outcomes: ["Recognize common security threats and attacks", "Apply secure identity and access practices", "Understand encryption and network defense", "Create a practical incident response plan"],
-        modules: ["Security principles and threat awareness", "Identity, authentication, and access control", "Networks, firewalls, and secure protocols", "Encryption, privacy, and secure applications", "Monitoring and incident response"],
-        image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=900&q=80",
-        alt: "Cybersecurity lock symbol on a laptop",
-        lessons: [
-            {
-                id: 1,
-                title: "Threats and secure habits",
-                description: "Learn the everyday risks, attack patterns, and best practices used to keep digital systems safer.",
-                videoTitle: "Cybersecurity foundations",
-                videoUrl: "https://www.youtube.com/watch?v=5Q1dfB0YJm4",
-                duration: "14 min",
-            },
-        ],
-    },
-    {
-        id: 6,
-        title: "AI & Machine Learning Essentials",
-        topic: "AI & Machine Learning",
-        durationLabel: "22 hours",
-        level: "Beginner to intermediate",
-        instructor: "Ishita Rao",
-        wikimediaTitle: "Machine learning",
-        description: "Understand how machine learning models learn from data and solve real-world problems.",
-        overview: "Explore the complete machine learning lifecycle, from preparing data and choosing a model to evaluating results and explaining predictions.",
-        outcomes: ["Prepare data for machine learning models", "Choose classification and regression approaches", "Evaluate model performance responsibly", "Build a small end-to-end ML project"],
-        modules: ["AI concepts and Python foundations", "Data preparation and feature engineering", "Regression and classification", "Model evaluation and improvement", "Responsible AI and final project"],
-        image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=80",
-        alt: "Abstract artificial intelligence illustration",
-        lessons: [
-            {
-                id: 1,
-                title: "AI workflow and model thinking",
-                description: "Introduce the core lifecycle of training models and turning data into useful predictions.",
-                videoTitle: "Machine learning basics",
-                videoUrl: "https://www.youtube.com/watch?v=Gv9_4yMHFAM",
-                duration: "13 min",
-            },
-        ],
-    },
-    {
-        id: 7,
-        title: "Internet of Things Foundations",
-        topic: "IoT",
-        durationLabel: "15 hours",
-        level: "Beginner",
-        instructor: "Maya Nair",
-        wikimediaTitle: "Internet of things",
-        description: "Learn how connected devices collect, share, and act on data in real-world systems.",
-        overview: "Understand the building blocks of IoT, from sensors and connectivity to edge processing, cloud platforms, and secure device management.",
-        outcomes: ["Explain the parts of an IoT system", "Connect sensors to collect useful data", "Compare edge and cloud processing", "Apply basic IoT security practices"],
-        modules: ["IoT concepts and connected devices", "Sensors, gateways, and communication", "Edge computing and cloud platforms", "Data pipelines and device management", "Security and a smart home project"],
-        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80",
-        alt: "Electronic circuit board representing connected devices",
-        lessons: [
-            {
-                id: 1,
-                title: "Connected devices overview",
-                description: "Review how sensors, gateways, and cloud systems work together to create smart connected experiences.",
-                videoTitle: "What is IoT?",
-                videoUrl: "https://www.youtube.com/watch?v=LlhmzVL5bm8",
-                duration: "12 min",
-            },
-        ],
-    },
 ];
 
 const sanitizeLesson = (lesson = {}) => ({
@@ -232,13 +36,6 @@ const sanitizeModules = (modules) => {
     return [];
 };
 
-const courses = defaultCourses.map((course) => ({
-    ...course,
-    lessons: Array.isArray(course.lessons) ? course.lessons.map(sanitizeLesson) : [],
-    modules: sanitizeModules(course.modules),
-    outcomes: Array.isArray(course.outcomes) ? course.outcomes : [],
-}));
-
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -251,7 +48,7 @@ app.use((req, res, next) => {
     }
 
     res.header("Access-Control-Allow-Headers", "Content-Type");
-    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
 
     if (req.method === "OPTIONS") {
         return res.sendStatus(204);
@@ -451,559 +248,1744 @@ app.post("/api/translate", async (req, res) => {
     }
 });
 
-app.get("/api/courses", (req, res) => {
-    res.json({
-        courses: courses.map((course) => ({
-            ...course,
-            lessons: course.lessons || [],
-        })),
-    });
+app.get("/api/courses", async (req, res) => {
+    try {
+        const coursesResult = await pool.query(`
+            SELECT
+                id,
+                title,
+                topic,
+                duration_label,
+                level,
+                instructor,
+                wikimedia_title,
+                description,
+                overview,
+                image,
+                alt
+            FROM courses
+            ORDER BY id
+        `);
+
+        const courses = [];
+
+        for (const course of coursesResult.rows) {
+            const modulesResult = await pool.query(
+                `SELECT title
+                 FROM modules
+                 WHERE course_id = $1
+                 ORDER BY module_order`,
+                [course.id]
+            );
+
+            const outcomesResult = await pool.query(
+                `SELECT outcome
+                 FROM course_outcomes
+                 WHERE course_id = $1
+                 ORDER BY outcome_order`,
+                [course.id]
+            );
+
+            const lessonsResult = await pool.query(
+                `SELECT
+                    id,
+                    title,
+                    description,
+                    video_title,
+                    video_url,
+                    duration
+                 FROM lessons
+                 WHERE course_id = $1
+                 ORDER BY lesson_order`,
+                [course.id]
+            );
+
+            courses.push({
+                id: course.id,
+                title: course.title,
+                topic: course.topic,
+                durationLabel: course.duration_label,
+                level: course.level,
+                instructor: course.instructor,
+                wikimediaTitle: course.wikimedia_title,
+                description: course.description,
+                overview: course.overview,
+                image: course.image,
+                alt: course.alt,
+
+                modules: modulesResult.rows.map((item) => item.title),
+
+                outcomes: outcomesResult.rows.map((item) => item.outcome),
+
+                lessons: lessonsResult.rows.map((lesson) => ({
+                    id: lesson.id,
+                    title: lesson.title,
+                    description: lesson.description,
+                    videoTitle: lesson.video_title,
+                    videoUrl: lesson.video_url,
+                    duration: lesson.duration,
+                })),
+            });
+        }
+
+        return res.json({ courses });
+
+    } catch (error) {
+        console.error("Get courses error:", error);
+
+        return res.status(500).json({
+            message: "Unable to fetch courses",
+        });
+    }
 });
 
-app.get("/api/analytics", (req, res) => {
-    const learners = users.filter((user) => user.role !== "instructor");
+app.get("/api/analytics", async (req, res) => {
+    try {
+        const coursesResult = await pool.query(
+            `SELECT id, title, topic
+             FROM courses
+             ORDER BY id`
+        );
 
-    const courseAnalytics = courses.map((course) => {
-        const enrolledLearners = learners.filter((learner) => {
-            const hasProgress = (learner.progress || []).some(
-                (progress) => String(progress.courseId) === String(course.id),
+        const courseAnalytics = [];
+
+        for (const course of coursesResult.rows) {
+            const learnersResult = await pool.query(
+                `SELECT
+                    u.id,
+                    u.name,
+                    u.email,
+                    COUNT(DISTINCT l.id)::int AS total_lessons,
+                    COUNT(DISTINCT lp.lesson_id) FILTER (WHERE lp.watched = true)::int AS watched_lessons
+                 FROM users u
+                 LEFT JOIN lessons l ON l.course_id = $1
+                 LEFT JOIN progress lp ON lp.lesson_id = l.id AND lp.course_id = $1 AND lp.user_id = u.id
+                 WHERE u.role != 'instructor'
+                   AND (
+                        EXISTS (
+                            SELECT 1
+                            FROM progress p
+                            WHERE p.user_id = u.id AND p.course_id = $1
+                        )
+                        OR UPPER(u.course_interest) = UPPER($2)
+                   )
+                 GROUP BY u.id, u.name, u.email
+                 ORDER BY u.id`,
+                [course.id, course.topic]
             );
-            return learner.courseInterest === course.topic || hasProgress;
+
+            const students = [];
+
+            for (let i = 0; i < learnersResult.rows.length; i++) {
+                const learner = learnersResult.rows[i];
+                const totalLessons = Math.max(learner.total_lessons, 1);
+                const completion = Math.min(100, Math.round((learner.watched_lessons / totalLessons) * 100));
+
+                const assessmentResult = await pool.query(
+                    `SELECT score
+                     FROM assessments
+                     WHERE user_id = $1 AND course_id = $2`,
+                    [learner.id, course.id]
+                );
+
+                const assessmentScore = assessmentResult.rows.length
+                    ? assessmentResult.rows[0].score
+                    : null;
+
+                const recommendation = assessmentScore !== null && assessmentScore < 80
+                    ? "Revisit the assessment topics, then retry the final check before moving on."
+                    : completion >= 80
+                    ? "Ready for an applied project or advanced challenge."
+                    : completion >= 40
+                        ? "Review the next lesson and practise with a short exercise."
+                        : "Start with the first lesson and schedule two focused study sessions.";
+
+                students[i] = {
+                    id: learner.id,
+                    name: learner.name,
+                    email: learner.email,
+                    completion,
+                    assessmentScore,
+                    watchedLessons: learner.watched_lessons,
+                    totalLessons: learner.total_lessons,
+                    recommendation,
+                };
+            }
+
+            const averageCompletion = students.length
+                ? Math.round(students.reduce((total, student) => total + student.completion, 0) / students.length)
+                : 0;
+
+            courseAnalytics.push({
+                id: course.id,
+                title: course.title,
+                topic: course.topic,
+                enrollment: students.length,
+                averageCompletion,
+                students,
+            });
+        }
+
+        return res.json({
+            courses: courseAnalytics,
+            totals: {
+                learners: new Set(courseAnalytics.flatMap((course) => course.students.map((student) => student.id))).size,
+                enrollments: courseAnalytics.reduce((total, course) => total + course.enrollment, 0),
+                averageCompletion: courseAnalytics.length
+                    ? Math.round(courseAnalytics.reduce((total, course) => total + course.averageCompletion, 0) / courseAnalytics.length)
+                    : 0,
+            },
         });
 
-        const students = enrolledLearners.map((learner) => {
-            const watchedLessons = new Set(
-                (learner.progress || [])
-                    .filter((progress) => String(progress.courseId) === String(course.id) && progress.watched)
-                    .map((progress) => String(progress.lessonId)),
-            ).size;
-            const totalLessons = Math.max(course.modules?.length || course.lessons?.length || 0, 1);
-            const completion = Math.min(100, Math.round((watchedLessons / totalLessons) * 100));
-            const assessment = (learner.assessments || []).find(
-                (item) => String(item.courseId) === String(course.id),
-            );
-            const assessmentScore = assessment?.score ?? null;
-            const recommendation = assessmentScore !== null && assessmentScore < 80
-                ? "Revisit the assessment topics, then retry the final check before moving on."
-                : completion >= 80
-                ? "Ready for an applied project or advanced challenge."
-                : completion >= 40
-                    ? "Review the next lesson and practise with a short exercise."
-                    : "Start with the first lesson and schedule two focused study sessions.";
+    } catch (error) {
+        console.error("Analytics error:", error);
 
-            return {
-                id: learner.id,
-                name: learner.name,
-                email: learner.email,
-                completion,
-                assessmentScore,
-                watchedLessons,
-                totalLessons,
-                recommendation,
-            };
+        return res.status(500).json({
+            message: "Unable to fetch analytics",
+        });
+    }
+});
+
+app.get("/api/courses/:courseId", async (req, res) => {
+    try {
+        const courseResult = await pool.query(
+            `SELECT
+                id,
+                title,
+                topic,
+                duration_label,
+                level,
+                instructor,
+                wikimedia_title,
+                description,
+                overview,
+                image,
+                alt
+             FROM courses
+             WHERE id = $1`,
+            [req.params.courseId]
+        );
+
+        if (courseResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Course not found",
+            });
+        }
+
+        const course = courseResult.rows[0];
+
+        const modulesResult = await pool.query(
+            `SELECT title
+             FROM modules
+             WHERE course_id = $1
+             ORDER BY module_order`,
+            [course.id]
+        );
+
+        const outcomesResult = await pool.query(
+            `SELECT outcome
+             FROM course_outcomes
+             WHERE course_id = $1
+             ORDER BY outcome_order`,
+            [course.id]
+        );
+
+        const lessonsResult = await pool.query(
+            `SELECT
+                id,
+                title,
+                description,
+                video_title,
+                video_url,
+                duration
+             FROM lessons
+             WHERE course_id = $1
+             ORDER BY lesson_order`,
+            [course.id]
+        );
+
+        return res.json({
+            course: {
+                id: course.id,
+                title: course.title,
+                topic: course.topic,
+                durationLabel: course.duration_label,
+                level: course.level,
+                instructor: course.instructor,
+                wikimediaTitle: course.wikimedia_title,
+                description: course.description,
+                overview: course.overview,
+                image: course.image,
+                alt: course.alt,
+
+                modules: modulesResult.rows.map((item) => item.title),
+
+                outcomes: outcomesResult.rows.map((item) => item.outcome),
+
+                lessons: lessonsResult.rows.map((lesson) => ({
+                    id: lesson.id,
+                    title: lesson.title,
+                    description: lesson.description,
+                    videoTitle: lesson.video_title,
+                    videoUrl: lesson.video_url,
+                    duration: lesson.duration,
+                })),
+            },
         });
 
-        const averageCompletion = students.length
-            ? Math.round(students.reduce((total, student) => total + student.completion, 0) / students.length)
-            : 0;
+    } catch (error) {
+        console.error("Get course error:", error);
 
-        return {
-            id: course.id,
-            title: course.title,
-            topic: course.topic,
-            enrollment: students.length,
-            averageCompletion,
-            students,
+        return res.status(500).json({
+            message: "Unable to fetch course",
+        });
+    }
+});
+
+app.post("/api/courses", async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const payload = req.body || {};
+
+        const title = String(payload.title || "").trim();
+        const topic = String(payload.topic || "").trim();
+        const description = String(payload.description || "").trim();
+        const overview = String(payload.overview || "").trim();
+        const instructor = String(payload.instructor || "").trim();
+
+        const durationLabel =
+            String(payload.durationLabel || "").trim() || "New course";
+
+        const level =
+            String(payload.level || "Beginner").trim();
+
+        const image =
+            String(
+                payload.image ||
+                "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80"
+            ).trim();
+
+        const alt =
+            String(payload.alt || `${title} course`).trim();
+
+        if (!title || !topic || !description || !overview || !instructor) {
+            return res.status(400).json({
+                message:
+                    "Course title, topic, description, overview, and instructor are required.",
+            });
+        }
+
+        await client.query("BEGIN");
+
+        const courseResult = await client.query(
+            `INSERT INTO courses
+                (
+                    title,
+                    topic,
+                    duration_label,
+                    level,
+                    instructor,
+                    wikimedia_title,
+                    description,
+                    overview,
+                    image,
+                    alt
+                )
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+             RETURNING id`,
+            [
+                title,
+                topic,
+                durationLabel,
+                level,
+                instructor,
+                topic,
+                description,
+                overview,
+                image,
+                alt,
+            ]
+        );
+
+        const courseId = courseResult.rows[0].id;
+
+        const outcomes =
+            Array.isArray(payload.outcomes) && payload.outcomes.length
+                ? payload.outcomes
+                      .map((item) => String(item).trim())
+                      .filter(Boolean)
+                : [
+                      "Learn the core concepts of this course",
+                      "Apply your learnings in a practical way",
+                      "Track your progress through the course modules",
+                  ];
+
+        for (let i = 0; i < outcomes.length; i++) {
+            await client.query(
+                `INSERT INTO course_outcomes
+                    (course_id, outcome, outcome_order)
+                 VALUES ($1, $2, $3)`,
+                [courseId, outcomes[i], i + 1]
+            );
+        }
+
+        const modules =
+            sanitizeModules(payload.modules) ||
+            ["Module 1", "Module 2", "Module 3"];
+
+        for (let i = 0; i < modules.length; i++) {
+            await client.query(
+                `INSERT INTO modules
+                    (course_id, title, module_order)
+                 VALUES ($1, $2, $3)`,
+                [courseId, modules[i], i + 1]
+            );
+        }
+
+        if (Array.isArray(payload.lessons)) {
+            for (let i = 0; i < payload.lessons.length; i++) {
+                const lesson = sanitizeLesson(payload.lessons[i]);
+
+                await client.query(
+                    `INSERT INTO lessons
+                        (
+                            course_id,
+                            title,
+                            description,
+                            video_title,
+                            video_url,
+                            duration,
+                            lesson_order
+                        )
+                     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+                    [
+                        courseId,
+                        lesson.title,
+                        lesson.description,
+                        lesson.videoTitle,
+                        lesson.videoUrl,
+                        lesson.duration,
+                        i + 1,
+                    ]
+                );
+            }
+        }
+
+        await client.query("COMMIT");
+
+        return res.status(201).json({
+            message: "Course created successfully",
+            courseId,
+        });
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+
+        console.error("Create course error:", error);
+
+        return res.status(500).json({
+            message: "Unable to create course",
+        });
+
+    } finally {
+        client.release();
+    }
+});
+
+app.put("/api/courses/:courseId", async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const courseId = req.params.courseId;
+        const payload = req.body || {};
+
+        const title = String(payload.title || "").trim();
+        const topic = String(payload.topic || "").trim();
+        const description = String(payload.description || "").trim();
+        const overview = String(payload.overview || "").trim();
+        const instructor = String(payload.instructor || "").trim();
+
+        if (!title || !topic || !description || !overview || !instructor) {
+            return res.status(400).json({
+                message:
+                    "Course title, topic, description, overview, and instructor are required.",
+            });
+        }
+
+        const durationLabel =
+            String(payload.durationLabel || "New course").trim();
+
+        const level =
+            String(payload.level || "Beginner").trim();
+
+        const image =
+            String(payload.image || "").trim();
+
+        const alt =
+            String(payload.alt || `${title} course`).trim();
+
+        await client.query("BEGIN");
+
+        // Check course exists
+        const existingCourse = await client.query(
+            `SELECT id
+             FROM courses
+             WHERE id = $1`,
+            [courseId]
+        );
+
+        if (existingCourse.rows.length === 0) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                message: "Course not found",
+            });
+        }
+
+        // Update main course
+        await client.query(
+            `UPDATE courses
+             SET
+                title = $1,
+                topic = $2,
+                duration_label = $3,
+                level = $4,
+                instructor = $5,
+                wikimedia_title = $6,
+                description = $7,
+                overview = $8,
+                image = $9,
+                alt = $10
+             WHERE id = $11`,
+            [
+                title,
+                topic,
+                durationLabel,
+                level,
+                instructor,
+                topic,
+                description,
+                overview,
+                image,
+                alt,
+                courseId,
+            ]
+        );
+
+        // Update modules
+        if (Array.isArray(payload.modules)) {
+            await client.query(
+                `DELETE FROM modules
+                 WHERE course_id = $1`,
+                [courseId]
+            );
+
+            const modules = sanitizeModules(payload.modules) || [];
+
+            for (let i = 0; i < modules.length; i++) {
+                await client.query(
+                    `INSERT INTO modules
+                        (course_id, title, module_order)
+                     VALUES ($1, $2, $3)`,
+                    [courseId, modules[i], i + 1]
+                );
+            }
+        }
+
+        // Update outcomes
+        if (Array.isArray(payload.outcomes)) {
+            await client.query(
+                `DELETE FROM course_outcomes
+                 WHERE course_id = $1`,
+                [courseId]
+            );
+
+            const outcomes = payload.outcomes
+                .map((item) => String(item).trim())
+                .filter(Boolean);
+
+            for (let i = 0; i < outcomes.length; i++) {
+                await client.query(
+                    `INSERT INTO course_outcomes
+                        (course_id, outcome, outcome_order)
+                     VALUES ($1, $2, $3)`,
+                    [courseId, outcomes[i], i + 1]
+                );
+            }
+        }
+
+        await client.query("COMMIT");
+
+        // Return the updated course using the same API structure
+        const updatedCourseResult = await pool.query(
+            `SELECT
+                id,
+                title,
+                topic,
+                duration_label,
+                level,
+                instructor,
+                wikimedia_title,
+                description,
+                overview,
+                image,
+                alt
+             FROM courses
+             WHERE id = $1`,
+            [courseId]
+        );
+
+        const course = updatedCourseResult.rows[0];
+
+        const modulesResult = await pool.query(
+            `SELECT title
+             FROM modules
+             WHERE course_id = $1
+             ORDER BY module_order`,
+            [courseId]
+        );
+
+        const outcomesResult = await pool.query(
+            `SELECT outcome
+             FROM course_outcomes
+             WHERE course_id = $1
+             ORDER BY outcome_order`,
+            [courseId]
+        );
+
+        const lessonsResult = await pool.query(
+            `SELECT
+                id,
+                title,
+                description,
+                video_title,
+                video_url,
+                duration
+             FROM lessons
+             WHERE course_id = $1
+             ORDER BY lesson_order`,
+            [courseId]
+        );
+
+        return res.json({
+            message: "Course updated successfully",
+            course: {
+                id: course.id,
+                title: course.title,
+                topic: course.topic,
+                durationLabel: course.duration_label,
+                level: course.level,
+                instructor: course.instructor,
+                wikimediaTitle: course.wikimedia_title,
+                description: course.description,
+                overview: course.overview,
+                image: course.image,
+                alt: course.alt,
+
+                modules: modulesResult.rows.map(
+                    (item) => item.title
+                ),
+
+                outcomes: outcomesResult.rows.map(
+                    (item) => item.outcome
+                ),
+
+                lessons: lessonsResult.rows.map((lesson) => ({
+                    id: lesson.id,
+                    title: lesson.title,
+                    description: lesson.description,
+                    videoTitle: lesson.video_title,
+                    videoUrl: lesson.video_url,
+                    duration: lesson.duration,
+                })),
+            },
+        });
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+
+        console.error("Update course error:", error);
+
+        return res.status(500).json({
+            message: "Unable to update course",
+        });
+
+    } finally {
+        client.release();
+    }
+});
+
+app.post("/api/courses/:courseId/content", async (req, res) => {
+    try {
+        const courseId = req.params.courseId;
+
+        const {
+            title,
+            description,
+            videoTitle,
+            videoUrl,
+            duration,
+        } = req.body || {};
+
+        if (!title || !description || !videoTitle || !videoUrl || !duration) {
+            return res.status(400).json({
+                message:
+                    "Title, description, video title, video URL, and duration are required",
+            });
+        }
+
+        // Check course exists
+        const courseResult = await pool.query(
+            `SELECT id, title
+             FROM courses
+             WHERE id = $1`,
+            [courseId]
+        );
+
+        if (courseResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Course not found",
+            });
+        }
+
+        // Find next lesson order
+        const orderResult = await pool.query(
+            `SELECT COALESCE(MAX(lesson_order), 0) + 1 AS next_order
+             FROM lessons
+             WHERE course_id = $1`,
+            [courseId]
+        );
+
+        const lessonOrder = orderResult.rows[0].next_order;
+
+        // Insert lesson
+        const lessonResult = await pool.query(
+            `INSERT INTO lessons
+                (
+                    course_id,
+                    title,
+                    description,
+                    video_title,
+                    video_url,
+                    duration,
+                    lesson_order
+                )
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING
+                id,
+                title,
+                description,
+                video_title,
+                video_url,
+                duration,
+                lesson_order`,
+            [
+                courseId,
+                String(title).trim(),
+                String(description).trim(),
+                String(videoTitle).trim(),
+                String(videoUrl).trim(),
+                String(duration).trim(),
+                lessonOrder,
+            ]
+        );
+
+        const lesson = lessonResult.rows[0];
+
+        return res.status(201).json({
+            message: "Lesson added successfully",
+            courseTitle: courseResult.rows[0].title,
+            lesson: {
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.description,
+                videoTitle: lesson.video_title,
+                videoUrl: lesson.video_url,
+                duration: lesson.duration,
+            },
+        });
+
+    } catch (error) {
+        console.error("Add lesson error:", error);
+
+        return res.status(500).json({
+            message: "Unable to add lesson",
+        });
+    }
+});
+
+app.put("/api/courses/:courseId/content/:lessonId", async (req, res) => {
+    try {
+        const { courseId, lessonId } = req.params;
+
+        const {
+            title,
+            description,
+            videoTitle,
+            videoUrl,
+            duration,
+        } = req.body || {};
+
+        if (!title || !description || !videoTitle || !videoUrl || !duration) {
+            return res.status(400).json({
+                message:
+                    "Title, description, video title, video URL, and duration are required",
+            });
+        }
+
+        // Check that the lesson exists AND belongs to this course
+        const existingLesson = await pool.query(
+            `SELECT
+                l.id,
+                l.course_id,
+                c.title AS course_title
+             FROM lessons l
+             JOIN courses c ON c.id = l.course_id
+             WHERE l.id = $1
+               AND l.course_id = $2`,
+            [lessonId, courseId]
+        );
+
+        if (existingLesson.rows.length === 0) {
+            return res.status(404).json({
+                message: "Lesson not found",
+            });
+        }
+
+        // Update lesson in PostgreSQL
+        const result = await pool.query(
+            `UPDATE lessons
+             SET
+                title = $1,
+                description = $2,
+                video_title = $3,
+                video_url = $4,
+                duration = $5
+             WHERE id = $6
+               AND course_id = $7
+             RETURNING
+                id,
+                title,
+                description,
+                video_title,
+                video_url,
+                duration`,
+            [
+                String(title).trim(),
+                String(description).trim(),
+                String(videoTitle).trim(),
+                String(videoUrl).trim(),
+                String(duration).trim(),
+                lessonId,
+                courseId,
+            ]
+        );
+
+        const lesson = result.rows[0];
+
+        return res.json({
+            message: "Lesson updated successfully",
+            courseTitle: existingLesson.rows[0].course_title,
+            lesson: {
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.description,
+                videoTitle: lesson.video_title,
+                videoUrl: lesson.video_url,
+                duration: lesson.duration,
+            },
+        });
+
+    } catch (error) {
+        console.error("Update lesson error:", error);
+
+        return res.status(500).json({
+            message: "Unable to update lesson",
+        });
+    }
+});
+
+app.post("/api/auth/register", async (req, res) => {
+    try {
+        const {
+            name,
+            email,
+            password,
+            courseInterest,
+            city,
+            location,
+            role,
+        } = req.body;
+
+        if (!name || !email || !password || !courseInterest || !city || !location) {
+            return res.status(400).json({
+                message:
+                    "Name, email, password, course interest, city, and location are required",
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Check if the email already exists in PostgreSQL
+        const existingUser = await pool.query(
+            "SELECT id FROM users WHERE email = $1",
+            [normalizedEmail]
+        );
+
+        if (existingUser.rows.length > 0) {
+            return res.status(409).json({
+                message: "An account with this email already exists",
+            });
+        }
+
+        // Never store the actual password
+        const passwordHash = await bcrypt.hash(password, 12);
+
+        const userRole =
+            role === "instructor" ? "instructor" : "learner";
+
+        const result = await pool.query(
+            `INSERT INTO users
+                (
+                    name,
+                    email,
+                    password_hash,
+                    course_interest,
+                    city,
+                    location,
+                    role
+                )
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING
+                id,
+                name,
+                email,
+                course_interest,
+                city,
+                location,
+                role,
+                created_at`,
+            [
+                name.trim(),
+                normalizedEmail,
+                passwordHash,
+                courseInterest,
+                city.trim(),
+                location.trim(),
+                userRole,
+            ]
+        );
+
+        const user = result.rows[0];
+
+        return res.status(201).json({
+            message: "Account created successfully",
+            user: publicUser(user),
+        });
+    } catch (error) {
+        console.error("Registration error:", error);
+
+        return res.status(500).json({
+            message: "Unable to create account",
+        });
+    }
+});
+
+
+app.post("/api/auth/login", async (req, res) => {
+    try {
+        const { email, password, role } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Email and password are required",
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        const result = await pool.query(
+            `SELECT
+                id,
+                name,
+                email,
+                password_hash,
+                course_interest,
+                city,
+                location,
+                role,
+                created_at
+             FROM users
+             WHERE email = $1`,
+            [normalizedEmail]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
+
+        const user = result.rows[0];
+
+        const passwordMatches = await bcrypt.compare(
+            password,
+            user.password_hash
+        );
+
+        if (!passwordMatches) {
+            return res.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
+
+        const requestedRole =
+            role === "instructor" ? "instructor" : "learner";
+
+        if (user.role !== requestedRole) {
+            return res.status(403).json({
+                message: `This account is registered as a ${user.role}. Please sign in as the correct role.`,
+            });
+        }
+
+        return res.json({
+            message: "Signed in successfully",
+            user: publicUser(user),
+        });
+    } catch (error) {
+        console.error("Login error:", error);
+
+        return res.status(500).json({
+            message: "Unable to sign in",
+        });
+    }
+});
+
+
+app.get("/api/account/:userId", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        // Get user
+        const userResult = await pool.query(
+            `SELECT
+                id,
+                name,
+                email,
+                course_interest,
+                city,
+                location,
+                role,
+                created_at
+             FROM users
+             WHERE id = $1`,
+            [userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Account not found",
+            });
+        }
+
+        const user = userResult.rows[0];
+
+        const progressResult = await pool.query(
+            `SELECT
+                p.course_id,
+                p.lesson_id,
+                p.watched,
+                p.updated_at,
+                c.title AS course_title,
+                l.title AS lesson_title
+             FROM progress p
+             JOIN courses c ON c.id = p.course_id
+             JOIN lessons l ON l.id = p.lesson_id
+             WHERE p.user_id = $1
+             ORDER BY p.updated_at DESC`,
+            [userId]
+        );
+
+        const progress = progressResult.rows.map((row) => ({
+            courseId: row.course_id,
+            lessonId: row.lesson_id,
+            watched: row.watched,
+            updatedAt: row.updated_at,
+        }));
+
+        const watchedCourses = progressResult.rows
+            .filter((row) => row.watched)
+            .map((row) => ({
+                courseId: row.course_id,
+                courseTitle: row.course_title,
+                lessonId: row.lesson_id,
+                lessonTitle: row.lesson_title,
+                updatedAt: row.updated_at,
+            }));
+
+        const certificates = await getCertificates(userId);
+
+        const completedResult = await pool.query(
+            `SELECT
+                a.course_id,
+                c.title,
+                c.topic,
+                a.score,
+                a.completed_at
+             FROM assessments a
+             JOIN courses c ON c.id = a.course_id
+             WHERE a.user_id = $1
+               AND a.score >= 80
+             ORDER BY a.completed_at DESC`,
+            [userId]
+        );
+
+        const completedCourses = completedResult.rows.map((row) => ({
+            courseId: row.course_id,
+            title: row.title,
+            topic: row.topic,
+            score: row.score,
+            completedAt: row.completed_at,
+        }));
+
+        const recommendations = await getRecommendations(user);
+
+        return res.json({
+            user: {
+                ...publicUser(user),
+                progress,
+            },
+            watchedCourses,
+            certificates,
+            completedCourses,
+            recommendations,
+        });
+
+    } catch (error) {
+        console.error("Account error:", error);
+
+        return res.status(500).json({
+            message: "Unable to fetch account",
+        });
+    }
+});
+
+app.post("/api/account/:userId/certificates", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        const userResult = await pool.query(
+            `SELECT id
+             FROM users
+             WHERE id = $1`,
+            [userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Account not found",
+            });
+        }
+
+        const certificate = sanitizeCertificate(req.body, "external");
+
+        if (!certificate) {
+            return res.status(400).json({
+                message: "Certificate title and issuer are required, with a valid credential URL if provided.",
+            });
+        }
+
+        await pool.query(
+            `INSERT INTO certificates
+                (
+                    id,
+                    user_id,
+                    title,
+                    issuer,
+                    issue_date,
+                    credential_url,
+                    image_data,
+                    credential_id,
+                    skills,
+                    source,
+                    course_id,
+                    score,
+                    created_at
+                )
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+            [
+                certificate.id,
+                userId,
+                certificate.title,
+                certificate.issuer,
+                certificate.issueDate || null,
+                certificate.credentialUrl || null,
+                certificate.imageData || null,
+                certificate.credentialId || null,
+                certificate.skills,
+                certificate.source,
+                certificate.courseId,
+                certificate.score,
+                certificate.createdAt,
+            ]
+        );
+
+        return res.status(201).json({
+            message: "Certificate added",
+            certificate,
+            certificates: await getCertificates(userId),
+        });
+
+    } catch (error) {
+        console.error("Add certificate error:", error);
+
+        return res.status(500).json({
+            message: "Unable to add certificate",
+        });
+    }
+});
+
+app.put("/api/account/:userId/certificates/:certificateId", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const certificateId = req.params.certificateId;
+
+        const existing = await pool.query(
+            `SELECT id
+             FROM certificates
+             WHERE user_id = $1 AND id = $2`,
+            [userId, certificateId]
+        );
+
+        if (existing.rows.length === 0) {
+            return res.status(404).json({
+                message: "Certificate not found",
+            });
+        }
+
+        const certificate = sanitizeCertificate(req.body, "external");
+
+        if (!certificate) {
+            return res.status(400).json({
+                message: "Certificate title and issuer are required, with a valid credential URL if provided.",
+            });
+        }
+
+        certificate.id = certificateId;
+
+        await pool.query(
+            `UPDATE certificates
+             SET
+                title = $1,
+                issuer = $2,
+                issue_date = $3,
+                credential_url = $4,
+                image_data = $5,
+                credential_id = $6,
+                skills = $7,
+                source = $8,
+                course_id = $9,
+                score = $10
+             WHERE user_id = $11 AND id = $12`,
+            [
+                certificate.title,
+                certificate.issuer,
+                certificate.issueDate || null,
+                certificate.credentialUrl || null,
+                certificate.imageData || null,
+                certificate.credentialId || null,
+                certificate.skills,
+                certificate.source,
+                certificate.courseId,
+                certificate.score,
+                userId,
+                certificateId,
+            ]
+        );
+
+        return res.json({
+            message: "Certificate updated",
+            certificate,
+            certificates: await getCertificates(userId),
+        });
+
+    } catch (error) {
+        console.error("Update certificate error:", error);
+
+        return res.status(500).json({
+            message: "Unable to update certificate",
+        });
+    }
+});
+
+app.delete("/api/account/:userId/certificates/:certificateId", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        const result = await pool.query(
+            `DELETE FROM certificates
+             WHERE user_id = $1 AND id = $2
+             RETURNING id`,
+            [userId, req.params.certificateId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Certificate not found",
+            });
+        }
+
+        return res.json({
+            message: "Certificate removed",
+            certificates: await getCertificates(userId),
+        });
+
+    } catch (error) {
+        console.error("Delete certificate error:", error);
+
+        return res.status(500).json({
+            message: "Unable to remove certificate",
+        });
+    }
+});
+
+app.post("/api/account/:userId/assessment", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const courseId = req.body?.courseId;
+        const score = Number(req.body?.score);
+
+        const userResult = await pool.query(
+            `SELECT id
+             FROM users
+             WHERE id = $1`,
+            [userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Account not found",
+            });
+        }
+
+        const courseResult = await pool.query(
+            `SELECT id, title, topic
+             FROM courses
+             WHERE id = $1`,
+            [courseId]
+        );
+
+        if (courseResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Course not found",
+            });
+        }
+
+        if (!Number.isFinite(score) || score < 0 || score > 100) {
+            return res.status(400).json({
+                message: "A valid account, course, and score are required",
+            });
+        }
+
+        const savedAssessment = {
+            courseId: Number(courseId),
+            score: Math.round(score),
+            completedAt: new Date().toISOString(),
         };
-    });
 
-    return res.json({
-        courses: courseAnalytics,
-        totals: {
-            learners: new Set(courseAnalytics.flatMap((course) => course.students.map((student) => student.id))).size,
-            enrollments: courseAnalytics.reduce((total, course) => total + course.enrollment, 0),
-            averageCompletion: courseAnalytics.length
-                ? Math.round(courseAnalytics.reduce((total, course) => total + course.averageCompletion, 0) / courseAnalytics.length)
-                : 0,
-        },
-    });
-});
+        await pool.query(
+            `INSERT INTO assessments
+                (user_id, course_id, score, completed_at)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (user_id, course_id)
+             DO UPDATE SET
+                score = EXCLUDED.score,
+                completed_at = EXCLUDED.completed_at`,
+            [userId, courseId, savedAssessment.score, savedAssessment.completedAt]
+        );
 
-app.get("/api/courses/:courseId", (req, res) => {
-    const course = courses.find((item) => String(item.id) === String(req.params.courseId));
+        if (savedAssessment.score >= 80) {
+            const learnlyCertificate = sanitizeCertificate({
+                id: `learnly-${courseId}`,
+                title: courseResult.rows[0].title,
+                issuer: "Learnly Academy",
+                issueDate: savedAssessment.completedAt.slice(0, 10),
+                credentialId: `LEARNLY-${userId}-${courseId}`,
+                skills: [courseResult.rows[0].topic],
+                courseId: Number(courseId),
+                score: savedAssessment.score,
+            }, "learnly");
 
-    if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-    }
+            await pool.query(
+                `INSERT INTO certificates
+                    (
+                        id,
+                        user_id,
+                        title,
+                        issuer,
+                        issue_date,
+                        credential_url,
+                        image_data,
+                        credential_id,
+                        skills,
+                        source,
+                        course_id,
+                        score,
+                        created_at
+                    )
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                 ON CONFLICT (id)
+                 DO UPDATE SET
+                    title = EXCLUDED.title,
+                    issuer = EXCLUDED.issuer,
+                    issue_date = EXCLUDED.issue_date,
+                    credential_id = EXCLUDED.credential_id,
+                    skills = EXCLUDED.skills,
+                    course_id = EXCLUDED.course_id,
+                    score = EXCLUDED.score,
+                    created_at = EXCLUDED.created_at`,
+                [
+                    learnlyCertificate.id,
+                    userId,
+                    learnlyCertificate.title,
+                    learnlyCertificate.issuer,
+                    learnlyCertificate.issueDate || null,
+                    learnlyCertificate.credentialUrl || null,
+                    learnlyCertificate.imageData || null,
+                    learnlyCertificate.credentialId || null,
+                    learnlyCertificate.skills,
+                    learnlyCertificate.source,
+                    learnlyCertificate.courseId,
+                    learnlyCertificate.score,
+                    learnlyCertificate.createdAt,
+                ]
+            );
+        }
 
-    return res.json({
-        course: {
-            ...course,
-            lessons: course.lessons || [],
-        },
-    });
-});
+        return res.json({
+            message: "Assessment saved",
+            assessment: savedAssessment,
+        });
 
-app.post("/api/courses", (req, res) => {
-    const payload = req.body || {};
-    const title = String(payload.title || "").trim();
-    const topic = String(payload.topic || "").trim();
-    const description = String(payload.description || "").trim();
-    const overview = String(payload.overview || "").trim();
-    const instructor = String(payload.instructor || "").trim();
-    const durationLabel = String(payload.durationLabel || "").trim() || "New course";
-    const level = String(payload.level || "Beginner").trim();
-    const image = String(payload.image || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80").trim();
-    const alt = String(payload.alt || `${title} course`).trim();
+    } catch (error) {
+        console.error("Save assessment error:", error);
 
-    if (!title || !topic || !description || !overview || !instructor) {
-        return res.status(400).json({
-            message: "Course title, topic, description, overview, and instructor are required.",
+        return res.status(500).json({
+            message: "Unable to save assessment",
         });
     }
-
-    const newCourse = {
-        id: Date.now(),
-        title,
-        topic,
-        durationLabel,
-        level,
-        instructor,
-        wikimediaTitle: topic,
-        description,
-        overview,
-        outcomes: Array.isArray(payload.outcomes) && payload.outcomes.length
-            ? payload.outcomes.map((item) => String(item).trim()).filter(Boolean)
-            : ["Learn the core concepts of this course", "Apply your learnings in a practical way", "Track your progress through the course modules"],
-        modules: sanitizeModules(payload.modules) || ["Module 1", "Module 2", "Module 3"],
-        image,
-        alt,
-        lessons: Array.isArray(payload.lessons)
-            ? payload.lessons.map(sanitizeLesson)
-            : [],
-    };
-
-    courses.push(newCourse);
-
-    return res.status(201).json({
-        message: "Course created successfully",
-        course: newCourse,
-    });
 });
 
-app.put("/api/courses/:courseId", (req, res) => {
-    const course = courses.find((item) => String(item.id) === String(req.params.courseId));
+app.post("/api/account/:userId/progress", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const { courseId, lessonId, watched } = req.body || {};
 
-    if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-    }
+        if (!courseId || !lessonId) {
+            return res.status(400).json({
+                message: "courseId and lessonId are required",
+            });
+        }
 
-    const payload = req.body || {};
-    const title = String(payload.title || "").trim();
-    const topic = String(payload.topic || "").trim();
-    const description = String(payload.description || "").trim();
-    const overview = String(payload.overview || "").trim();
-    const instructor = String(payload.instructor || "").trim();
+        // Check user
+        const userResult = await pool.query(
+            `SELECT id
+             FROM users
+             WHERE id = $1`,
+            [userId]
+        );
 
-    if (!title || !topic || !description || !overview || !instructor) {
-        return res.status(400).json({
-            message: "Course title, topic, description, overview, and instructor are required.",
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Account not found",
+            });
+        }
+
+        // Check course
+        const courseResult = await pool.query(
+            `SELECT id, title
+             FROM courses
+             WHERE id = $1`,
+            [courseId]
+        );
+
+        if (courseResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Course not found",
+            });
+        }
+
+        // Check lesson belongs to this course
+        const lessonResult = await pool.query(
+            `SELECT id, title
+             FROM lessons
+             WHERE id = $1
+               AND course_id = $2`,
+            [lessonId, courseId]
+        );
+
+        if (lessonResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Lesson not found for this course",
+            });
+        }
+
+        // Insert or update progress
+        const progressResult = await pool.query(
+            `INSERT INTO progress
+                (user_id, course_id, lesson_id, watched, updated_at)
+             VALUES ($1, $2, $3, $4, NOW())
+             ON CONFLICT (user_id, course_id, lesson_id)
+             DO UPDATE SET
+                watched = EXCLUDED.watched,
+                updated_at = NOW()
+             RETURNING
+                id,
+                user_id,
+                course_id,
+                lesson_id,
+                watched,
+                updated_at`,
+            [
+                userId,
+                courseId,
+                lessonId,
+                Boolean(watched),
+            ]
+        );
+
+        const savedProgress = progressResult.rows[0];
+
+        return res.json({
+            message: "Progress saved",
+            progress: [savedProgress],
+        });
+
+    } catch (error) {
+        console.error("Save progress error:", error);
+
+        return res.status(500).json({
+            message: "Unable to save progress",
         });
     }
-
-    Object.assign(course, {
-        title,
-        topic,
-        durationLabel: String(payload.durationLabel || "New course").trim(),
-        level: String(payload.level || "Beginner").trim(),
-        instructor,
-        wikimediaTitle: topic,
-        description,
-        overview,
-        image: String(payload.image || course.image).trim(),
-        alt: String(payload.alt || `${title} course`).trim(),
-        modules: sanitizeModules(payload.modules),
-    });
-
-    return res.json({
-        message: "Course updated successfully",
-        course,
-    });
 });
 
-app.post("/api/courses/:courseId/content", (req, res) => {
-    const course = courses.find((item) => String(item.id) === String(req.params.courseId));
-    const { title, description, videoTitle, videoUrl, duration } = req.body || {};
+app.get("/api/account/:userId/progress", async (req, res) => {
+    try {
+        const userId = req.params.userId;
 
-    if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-    }
+        const result = await pool.query(
+            `SELECT
+                p.id,
+                p.user_id,
+                p.course_id,
+                p.lesson_id,
+                p.watched,
+                p.updated_at,
+                c.title AS course_title,
+                l.title AS lesson_title
+             FROM progress p
+             JOIN courses c ON c.id = p.course_id
+             JOIN lessons l ON l.id = p.lesson_id
+             WHERE p.user_id = $1
+             ORDER BY p.updated_at DESC`,
+            [userId]
+        );
 
-    if (!title || !description || !videoTitle || !videoUrl || !duration) {
-        return res.status(400).json({
-            message: "Title, description, video title, video URL, and duration are required",
+        return res.json({
+            progress: result.rows,
+        });
+
+    } catch (error) {
+        console.error("Get progress error:", error);
+
+        return res.status(500).json({
+            message: "Unable to fetch progress",
         });
     }
-
-    const lesson = sanitizeLesson({
-        id: Date.now(),
-        title,
-        description,
-        videoTitle,
-        videoUrl,
-        duration,
-    });
-
-    course.lessons = Array.isArray(course.lessons) ? [...course.lessons, lesson] : [lesson];
-
-    return res.status(201).json({
-        message: "Lesson added successfully",
-        courseTitle: course.title,
-        lesson,
-        course,
-    });
 });
 
-app.put("/api/courses/:courseId/content/:lessonId", (req, res) => {
-    const course = courses.find((item) => String(item.id) === String(req.params.courseId));
+app.get("/api/account/:userId/courses/:courseId/progress", async (req, res) => {
+    try {
+        const { userId, courseId } = req.params;
 
-    if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-    }
+        const result = await pool.query(
+            `SELECT
+                COUNT(l.id)::int AS total_lessons,
+                COUNT(p.lesson_id) FILTER (WHERE p.watched = true)::int AS completed_lessons
+             FROM lessons l
+             LEFT JOIN progress p
+                ON p.lesson_id = l.id
+                AND p.course_id = l.course_id
+                AND p.user_id = $1
+             WHERE l.course_id = $2`,
+            [userId, courseId]
+        );
 
-    const lessonIndex = course.lessons.findIndex(
-        (lesson) => String(lesson.id) === String(req.params.lessonId),
-    );
+        const totalLessons = result.rows[0].total_lessons;
+        const completedLessons = result.rows[0].completed_lessons;
 
-    if (lessonIndex === -1) {
-        return res.status(404).json({ message: "Lesson not found" });
-    }
+        const percentage =
+            totalLessons === 0
+                ? 0
+                : Math.round((completedLessons / totalLessons) * 100);
 
-    const { title, description, videoTitle, videoUrl, duration } = req.body || {};
+        return res.json({
+            courseId: Number(courseId),
+            totalLessons,
+            completedLessons,
+            percentage,
+        });
 
-    if (!title || !description || !videoTitle || !videoUrl || !duration) {
-        return res.status(400).json({
-            message: "Title, description, video title, video URL, and duration are required",
+    } catch (error) {
+        console.error("Get course progress error:", error);
+
+        return res.status(500).json({
+            message: "Unable to calculate course progress",
         });
     }
-
-    course.lessons[lessonIndex] = sanitizeLesson({
-        id: course.lessons[lessonIndex].id,
-        title,
-        description,
-        videoTitle,
-        videoUrl,
-        duration,
-    });
-
-    return res.json({
-        message: "Lesson updated successfully",
-        courseTitle: course.title,
-        lesson: course.lessons[lessonIndex],
-        course,
-    });
 });
 
-app.post("/api/auth/register", (req, res) => {
-    const {
-        name,
-        email,
-        password,
-        courseInterest,
-        city,
-        location,
-        role,
-    } = req.body;
+function sanitizeCertificate(certificate = {}, source = "external") {
+    const title = String(certificate.title || "").trim();
+    const issuer = String(certificate.issuer || "").trim();
 
-    if (!name || !email || !password || !courseInterest || !city || !location) {
-        return res.status(400).json({
-            message: "Name, email, password, course interest, city, and location are required",
-        });
+    if (!title || !issuer) {
+        return null;
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const existingUser = users.find((user) => user.email === normalizedEmail);
+    const allowedSkills = [];
+    const skills = Array.isArray(certificate.skills) ? certificate.skills : [];
 
-    if (existingUser) {
-        return res.status(409).json({ message: "An account with this email already exists" });
-    }
-
-    const user = {
-        id: users.length + 1,
-        name: name.trim(),
-        email: normalizedEmail,
-        password,
-        courseInterest,
-        city: city.trim(),
-        location: location.trim(),
-        role: role === "instructor" ? "instructor" : "learner",
-        progress: [],
-    };
-
-    users.push(user);
-    saveUsers();
-
-    return res.status(201).json({
-        message: "Account created successfully",
-        user: publicUser(user),
-    });
-});
-
-app.post("/api/auth/login", (req, res) => {
-    const { email, password, role } = req.body;
-    const user = users.find(
-        (candidate) => candidate.email === email?.trim().toLowerCase(),
-    );
-
-    if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    const requestedRole = role === "instructor" ? "instructor" : "learner";
-    if (user.role !== requestedRole) {
-        return res.status(403).json({
-            message: `This account is registered as a ${user.role}. Please sign in as the correct role.`,
-        });
-    }
-
-    return res.json({
-        message: "Signed in successfully",
-        user: publicUser(user),
-    });
-});
-
-function sanitizeCertificate(payload = {}, source = "external") {
-    const title = String(payload.title || payload.courseTitle || "").trim();
-    const issuer = String(payload.issuer || "").trim();
-    const credentialUrl = String(payload.credentialUrl || "").trim();
-    const issueDate = String(payload.issueDate || "").trim();
-    const imageData = typeof payload.imageData === "string" && /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(payload.imageData)
-        ? payload.imageData.slice(0, 4_000_000)
-        : "";
-
-    if (!title || !issuer) return null;
-
-    if (credentialUrl) {
-        try {
-            const url = new URL(credentialUrl);
-            if (!['http:', 'https:'].includes(url.protocol)) return null;
-        } catch {
-            return null;
+    for (const skill of skills) {
+        const trimmedSkill = String(skill).trim();
+        if (trimmedSkill && allowedSkills.indexOf(trimmedSkill) === -1) {
+            allowedSkills.push(trimmedSkill);
         }
     }
 
+    let credentialUrl = String(certificate.credentialUrl || "").trim();
+    if (credentialUrl && !/^https?:\/\//.test(credentialUrl)) {
+        credentialUrl = "";
+    }
+
+    const canSave = title && issuer && (credentialUrl ? true : true);
+    if (!canSave) {
+        return null;
+    }
+
     return {
-        id: payload.id || `cert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: String(certificate.id || `cert-${Date.now()}`),
         title,
         issuer,
-        issueDate,
-        credentialUrl,
-        imageData,
-        credentialId: String(payload.credentialId || "").trim(),
-        skills: Array.isArray(payload.skills)
-            ? payload.skills.map((skill) => String(skill).trim()).filter(Boolean).slice(0, 12)
-            : String(payload.skills || "").split(",").map((skill) => skill.trim()).filter(Boolean).slice(0, 12),
+        issueDate: String(certificate.issueDate || "").trim() || null,
+        credentialUrl: credentialUrl || null,
+        imageData: String(certificate.imageData || "").trim() || null,
+        credentialId: String(certificate.credentialId || "").trim() || null,
+        skills: allowedSkills,
         source,
-        courseId: payload.courseId || null,
-        score: Number.isFinite(Number(payload.score)) ? Math.round(Number(payload.score)) : null,
-        createdAt: payload.createdAt || new Date().toISOString(),
+        courseId:
+            Number.isFinite(Number(certificate.courseId)) && Number(certificate.courseId) > 0
+                ? Number(certificate.courseId)
+                : null,
+        score:
+            Number.isFinite(Number(certificate.score))
+                ? Math.max(0, Math.min(100, Math.round(Number(certificate.score))))
+                : null,
+        createdAt: new Date().toISOString(),
     };
 }
 
-function getCompletedCourses(user) {
-    return (user.assessments || [])
-        .filter((assessment) => Number(assessment.score) >= 80)
-        .map((assessment) => {
-            const course = courses.find((item) => String(item.id) === String(assessment.courseId));
-            return course
-                ? {
-                    courseId: course.id,
-                    title: course.title,
-                    topic: course.topic,
-                    score: assessment.score,
-                    completedAt: assessment.completedAt,
-                }
-                : null;
-        })
-        .filter(Boolean);
+async function getCertificates(userId) {
+    const result = await pool.query(
+        `SELECT
+            id,
+            title,
+            issuer,
+            issue_date,
+            credential_url,
+            image_data,
+            credential_id,
+            skills,
+            source,
+            course_id,
+            score,
+            created_at
+         FROM certificates
+         WHERE user_id = $1
+         ORDER BY created_at DESC`,
+        [userId]
+    );
+
+    return result.rows.map((certificate) => ({
+        id: certificate.id,
+        title: certificate.title,
+        issuer: certificate.issuer,
+        issueDate: certificate.issue_date,
+        credentialUrl: certificate.credential_url,
+        imageData: certificate.image_data,
+        credentialId: certificate.credential_id,
+        skills: certificate.skills || [],
+        source: certificate.source,
+        courseId: certificate.course_id,
+        score: certificate.score,
+        createdAt: certificate.created_at,
+    }));
 }
 
-function getRecommendations(user) {
-    const completedIds = new Set(getCompletedCourses(user).map((course) => String(course.courseId)));
-    const interest = String(user.courseInterest || "").toLowerCase();
+async function getRecommendations(user) {
+    const userInterest = user?.course_interest
+        ? String(user.course_interest).trim().toLowerCase()
+        : "";
 
-    return courses
-        .filter((course) => !completedIds.has(String(course.id)))
+    const coursesResult = await pool.query(
+        `SELECT c.id, c.title, c.topic
+         FROM courses c
+         WHERE NOT EXISTS (
+             SELECT 1
+             FROM assessments a
+             WHERE a.user_id = $1 AND a.course_id = c.id AND a.score >= 80
+         )
+         ORDER BY c.id
+         LIMIT 50`,
+        [user.id]
+    );
+
+    return coursesResult.rows
         .map((course) => {
-            const matchesInterest = course.topic.toLowerCase() === interest;
-            const reason = matchesInterest
-                ? `Matches your ${course.topic} learning path.`
-                : `Builds on your interest in ${user.courseInterest || course.topic}.`;
-            return { ...course, reason, recommendationScore: matchesInterest ? 2 : 1 };
+            const interestMatch =
+                userInterest &&
+                String(course.topic || "").trim().toLowerCase() === userInterest;
+
+            return {
+                id: course.id,
+                title: course.title,
+                topic: course.topic,
+                recommendationScore: interestMatch ? 1 : 0,
+            };
         })
-        .sort((first, second) => second.recommendationScore - first.recommendationScore || first.id - second.id)
+        .sort((a, b) => {
+            if (b.recommendationScore !== a.recommendationScore) {
+                return b.recommendationScore - a.recommendationScore;
+            }
+            return a.id - b.id;
+        })
         .slice(0, 3)
         .map(({ recommendationScore, ...course }) => course);
 }
 
-app.get("/api/account/:userId", (req, res) => {
-    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
-
-    if (!user) {
-        return res.status(404).json({ message: "Account not found" });
-    }
-
-    return res.json({
-        user: publicUser(user),
-        watchedCourses: getWatchedCourses(user),
-        certificates: Array.isArray(user.certificates) ? user.certificates : [],
-        completedCourses: getCompletedCourses(user),
-        recommendations: getRecommendations(user),
-    });
-});
-
-app.post("/api/account/:userId/certificates", (req, res) => {
-    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
-    const certificate = sanitizeCertificate(req.body, "external");
-
-    if (!user || !certificate) {
-        return res.status(400).json({ message: "Certificate title and issuer are required, with a valid credential URL if provided." });
-    }
-
-    user.certificates = Array.isArray(user.certificates) ? user.certificates : [];
-    user.certificates.unshift(certificate);
-    saveUsers();
-    return res.status(201).json({ message: "Certificate added", certificate, certificates: user.certificates });
-});
-
-app.put("/api/account/:userId/certificates/:certificateId", (req, res) => {
-    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
-    const certificate = sanitizeCertificate(req.body, "external");
-
-    if (!user || !certificate) {
-        return res.status(400).json({ message: "Certificate title and issuer are required, with a valid credential URL if provided." });
-    }
-
-    user.certificates = Array.isArray(user.certificates) ? user.certificates : [];
-    const certificateIndex = user.certificates.findIndex((item) => String(item.id) === String(req.params.certificateId));
-    if (certificateIndex === -1) return res.status(404).json({ message: "Certificate not found" });
-
-    certificate.id = user.certificates[certificateIndex].id;
-    user.certificates[certificateIndex] = certificate;
-    saveUsers();
-    return res.json({ message: "Certificate updated", certificate, certificates: user.certificates });
-});
-
-app.delete("/api/account/:userId/certificates/:certificateId", (req, res) => {
-    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
-
-    if (!user) return res.status(404).json({ message: "Account not found" });
-
-    user.certificates = Array.isArray(user.certificates) ? user.certificates : [];
-    const originalCount = user.certificates.length;
-    user.certificates = user.certificates.filter((certificate) => String(certificate.id) !== String(req.params.certificateId));
-
-    if (user.certificates.length === originalCount) return res.status(404).json({ message: "Certificate not found" });
-
-    saveUsers();
-    return res.json({ message: "Certificate removed", certificates: user.certificates });
-});
-
-app.post("/api/account/:userId/progress", (req, res) => {
-    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
-    const course = courses.find((item) => String(item.id) === String(req.body?.courseId));
-    const lesson = course?.lessons?.find((item) => String(item.id) === String(req.body?.lessonId));
-    const moduleNumber = Number(req.body?.lessonId);
-
-    if (!user || !course || (!lesson && (!Number.isInteger(moduleNumber) || moduleNumber < 1 || moduleNumber > course.modules.length))) {
-        return res.status(404).json({ message: "Course, lesson, or account not found" });
-    }
-
-    user.progress = Array.isArray(user.progress) ? user.progress : [];
-    const existingProgress = user.progress.find(
-        (item) => String(item.courseId) === String(course.id) && String(item.lessonId) === String(lesson.id),
-    );
-
-    if (existingProgress) {
-        existingProgress.watched = Boolean(req.body.watched);
-        existingProgress.updatedAt = new Date().toISOString();
-    } else {
-        user.progress.push({
-            courseId: course.id,
-            lessonId: lesson.id,
-            watched: Boolean(req.body.watched),
-            updatedAt: new Date().toISOString(),
-        });
-    }
-
-    saveUsers();
-
-    return res.json({
-        message: "Progress saved",
-        progress: user.progress,
-        watchedCourses: getWatchedCourses(user),
-    });
-});
-
-app.post("/api/account/:userId/assessment", (req, res) => {
-    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
-    const course = courses.find((item) => String(item.id) === String(req.body?.courseId));
-    const score = Number(req.body?.score);
-
-    if (!user || !course || !Number.isFinite(score) || score < 0 || score > 100) {
-        return res.status(400).json({ message: "A valid account, course, and score are required" });
-    }
-
-    user.assessments = Array.isArray(user.assessments) ? user.assessments : [];
-    const existingAssessment = user.assessments.find(
-        (assessment) => String(assessment.courseId) === String(course.id),
-    );
-    const savedAssessment = {
-        courseId: course.id,
-        score: Math.round(score),
-        completedAt: new Date().toISOString(),
-    };
-
-    if (existingAssessment) Object.assign(existingAssessment, savedAssessment);
-    else user.assessments.push(savedAssessment);
-
-    if (savedAssessment.score >= 80) {
-        user.certificates = Array.isArray(user.certificates) ? user.certificates : [];
-        const learnlyCertificate = sanitizeCertificate({
-            id: `learnly-${course.id}`,
-            title: course.title,
-            issuer: "Learnly Academy",
-            issueDate: savedAssessment.completedAt.slice(0, 10),
-            credentialId: `LEARNLY-${user.id}-${course.id}`,
-            skills: [course.topic],
-            courseId: course.id,
-            score: savedAssessment.score,
-        }, "learnly");
-        const existingCertificateIndex = user.certificates.findIndex((certificate) => certificate.id === learnlyCertificate.id);
-        if (existingCertificateIndex >= 0) user.certificates[existingCertificateIndex] = learnlyCertificate;
-        else user.certificates.unshift(learnlyCertificate);
-    }
-
-    saveUsers();
-    return res.json({ message: "Assessment saved", assessment: savedAssessment });
-});
-
 function publicUser(user) {
-    const { password, ...safeUser } = user;
-    return safeUser;
-}
-
-function getWatchedCourses(user) {
-    return (user.progress || [])
-        .filter((progress) => progress.watched)
-        .map((progress) => {
-            const course = courses.find((item) => String(item.id) === String(progress.courseId));
-            const lesson = course?.lessons?.find((item) => String(item.id) === String(progress.lessonId));
-            return course && lesson
-                ? { courseId: course.id, courseTitle: course.title, lessonId: lesson.id, lessonTitle: lesson.title, updatedAt: progress.updatedAt }
-                : null;
-        })
-        .filter(Boolean);
+    return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        courseInterest: user.course_interest,
+        city: user.city,
+        location: user.location,
+        role: user.role,
+        createdAt: user.created_at,
+    };
 }
 
 app.use((req, res) => {

@@ -18,8 +18,8 @@ Learnly is a full-stack learning management system built with React, Vite, and E
 ## Tech Stack
 
 - Frontend: React 19, React Router, Vite, Chart.js
-- Backend: Node.js, Express 5
-- Data storage: Local JSON storage for user accounts and progress, with in-memory course data
+- Backend: Node.js, Express 5, PostgreSQL
+- Data storage: PostgreSQL for user accounts, progress, assessments, and certificates, with seeded in-memory course data
 
 ## Project Structure
 
@@ -27,7 +27,10 @@ Learnly is a full-stack learning management system built with React, Vite, and E
 LMS/
 ├── Backend/
 │   ├── package.json
-│   └── script.js             # Express API and in-memory course data
+│   ├── db.js                # PostgreSQL connection pool
+│   ├── seed.js              # Create tables and seed courses
+│   ├── courseData.js        # Default course data
+│   └── script.js            # Express API
 ├── Frontend/
 │   ├── package.json
 │   ├── vite.config.js
@@ -58,7 +61,23 @@ Start both the backend and frontend together:
 npm run dev
 ```
 
-This starts the API at `http://localhost:5000` and Vite at `http://localhost:5173`.
+This starts the API at `http://localhost:5001` and Vite at `http://localhost:5173`.
+
+To run them in separate terminals instead, start the backend in one:
+
+```bash
+npm run start:backend
+```
+
+The API runs at `http://localhost:5001`.
+
+Then start the frontend in another terminal:
+
+```bash
+npm run dev
+```
+
+Vite prints the local frontend URL, usually `http://localhost:5173`.
 
 You can also run the backend from the `Backend` directory:
 
@@ -84,12 +103,15 @@ Run these commands from the project root:
 The frontend uses the following optional variable for the API base URL:
 
 ```bash
-VITE_API_URL=http://localhost:5000
+VITE_API_URL=http://localhost:5001
 ```
 
-The backend proxies translation requests to LibreTranslate. Configure the provider when starting the backend:
+The backend proxies translation requests to LibreTranslate or Google Gemini. Configure the provider when starting the backend:
 
 ```bash
+GEMINI_API_KEY=your-api-key
+GEMINI_MODEL=gemini-flash-latest
+
 LIBRETRANSLATE_URL=https://libretranslate.com
 LIBRETRANSLATE_API_KEY=your-api-key
 ```
@@ -103,7 +125,7 @@ npm run start:backend
 
 For a self-hosted LibreTranslate instance, set `LIBRETRANSLATE_URL` to its base URL. The language selector is available in the main header.
 
-If it is not set, the frontend defaults to `http://localhost:5000`.
+If it is not set, the frontend defaults to `http://localhost:5001`.
 
 ## API Endpoints
 
@@ -122,13 +144,19 @@ If it is not set, the frontend defaults to `http://localhost:5000`.
 
 - `POST /api/auth/register` - Create a learner or instructor account
 - `POST /api/auth/login` - Sign in as a learner or instructor
-- `GET /api/account/:userId` - Get account details and watched courses
+- `GET /api/account/:userId` - Get account details, watched courses, certificates, completions, and recommendations
 - `POST /api/account/:userId/progress` - Save lesson progress
+- `POST /api/account/:userId/assessment` - Save a course assessment and award a certificate at 80% or higher
+- `POST /api/account/:userId/certificates` - Add an external certificate
+- `PUT /api/account/:userId/certificates/:certificateId` - Update a certificate
+- `DELETE /api/account/:userId/certificates/:certificateId` - Remove a certificate
+- `GET /api/analytics` - Instructor dashboard analytics
+- `POST /api/translate` - Translate text through LibreTranslate or Gemini
 
 ## Important Notes
 
-- User accounts and lesson progress are stored in `Backend/users.json`, which survives backend restarts and is ignored by Git.
-- Authentication is intended for local development and demonstration. Passwords are not persisted securely and there is no session or token system yet.
+- User accounts, progress, assessments, certificates, and course edits are stored in PostgreSQL. Run `node seed.js` in `Backend` first to create the tables and seed the courses.
+- Authentication is intended for local development and demonstration. Passwords are hashed but there is no session or token system yet.
 - Course images and lesson videos use remote URLs, so an internet connection may be needed for all media to load.
 
 ## Production Improvements
