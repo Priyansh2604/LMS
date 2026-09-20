@@ -125,6 +125,8 @@
 
 .course-syllabus li { display: flex; gap: 18px; padding-left: 0; }
 .course-syllabus li span { color: var(--accent); font-weight: 700; }
+.course-syllabus li a { color: var(--text); text-decoration-color: var(--accent); text-underline-offset: 4px; }
+.course-syllabus li a:hover { color: var(--accent); }
 .course-details-empty { min-height: 55vh; }
 
 .course-reading {

@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
 
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 .learning-paths, .app-shell > h1, .app-shell > .courses { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
 .learning-paths { padding: 96px 0 72px; }
 .learning-paths h1, .app-shell > h1 { margin: 0 0 28px; color: var(--text); font-family: "Space Grotesk", sans-serif; font-size: clamp(1.8rem, 3vw, 2.8rem); letter-spacing: -0.04em; }

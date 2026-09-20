@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
+import { useRef } from "react";
+import { Chart, registerables } from "chart.js";
 import "./InstructorAdmin.css";
+
+Chart.register(...registerables);
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -36,6 +40,19 @@ const emptyLessonForm = {
   duration: "",
 };
 
+function AnalyticsChart({ type, data, options, ariaLabel }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return undefined;
+
+    const chart = new Chart(canvasRef.current, { type, data, options });
+    return () => chart.destroy();
+  }, [data, options, type]);
+
+  return <canvas ref={canvasRef} role="img" aria-label={ariaLabel} />;
+}
+
 function InstructorAdmin() {
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
@@ -44,6 +61,8 @@ function InstructorAdmin() {
   const [editingCourseId, setEditingCourseId] = useState(null);
   const [editingLessonId, setEditingLessonId] = useState(null);
   const [status, setStatus] = useState({ type: "idle", message: "" });
+  const [analytics, setAnalytics] = useState({ courses: [], totals: {} });
+  const [selectedAnalyticsCourseId, setSelectedAnalyticsCourseId] = useState("");
 
   useEffect(() => {
     async function loadCourses() {
@@ -71,6 +90,75 @@ function InstructorAdmin() {
 
     loadCourses();
   }, []);
+
+  useEffect(() => {
+    async function loadAnalytics() {
+      try {
+        const response = await fetch(`${API_URL}/api/analytics`);
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.message || "Unable to load analytics.");
+
+        setAnalytics(data);
+        if (data.courses?.length > 0) setSelectedAnalyticsCourseId(String(data.courses[0].id));
+      } catch (error) {
+        setStatus({ type: "error", message: error.message || "Unable to load course analytics." });
+      }
+    }
+
+    loadAnalytics();
+  }, []);
+
+  const selectedAnalyticsCourse = analytics.courses.find(
+    (course) => String(course.id) === String(selectedAnalyticsCourseId),
+  ) || analytics.courses[0];
+  const chartTextColor = "#68706b";
+  const chartGridColor = "rgba(104, 112, 107, 0.16)";
+  const enrollmentChart = {
+    labels: analytics.courses.map((course) => course.title),
+    datasets: [{
+      label: "Learners",
+      data: analytics.courses.map((course) => course.enrollment),
+      backgroundColor: "#d6f36b",
+      borderColor: "#9cbd3d",
+      borderWidth: 1,
+      borderRadius: 4,
+    }],
+  };
+  const performanceChart = {
+    labels: selectedAnalyticsCourse?.students.map((student) => student.name) || [],
+    datasets: [
+      {
+        label: "Course completion %",
+        data: selectedAnalyticsCourse?.students.map((student) => student.completion) || [],
+        backgroundColor: "#8dd3c7",
+        borderWidth: 0,
+        borderRadius: 4,
+      },
+      {
+        label: "Assessment score %",
+        data: selectedAnalyticsCourse?.students.map((student) => student.assessmentScore) || [],
+        backgroundColor: "#fdb462",
+        borderWidth: 0,
+        borderRadius: 4,
+      },
+    ],
+  };
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+    },
+    scales: {
+      x: { ticks: { color: chartTextColor, maxRotation: 35, minRotation: 0 }, grid: { display: false } },
+      y: { beginAtZero: true, max: 100, ticks: { color: chartTextColor }, grid: { color: chartGridColor } },
+    },
+  };
+  const performanceChartOptions = {
+    ...chartOptions,
+    plugins: { ...chartOptions.plugins, legend: { display: true, labels: { color: chartTextColor } } },
+  };
 
   function updateCourseForm(event) {
     const { name, value } = event.target;
@@ -494,6 +582,50 @@ function InstructorAdmin() {
               <button type="button" onClick={() => startCourseEdit(course)} style={smallButtonStyle}>Edit course</button>
             </div>
           ))}
+        </section>
+
+        <section className="instructor-analytics" aria-labelledby="analytics-title">
+          <div className="analytics-heading">
+            <div>
+              <p className="instructor-eyebrow">Learning intelligence</p>
+              <h2 id="analytics-title">See where learners need momentum.</h2>
+              <p>Enrollment is based on learner interests and recorded course activity. Completion uses watched lessons.</p>
+            </div>
+            <label className="analytics-course-picker">
+              <span>Course performance</span>
+              <select value={selectedAnalyticsCourseId} onChange={(event) => setSelectedAnalyticsCourseId(event.target.value)}>
+                {analytics.courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <div className="analytics-kpis">
+            <div><strong>{analytics.totals.learners || 0}</strong><span>Unique learners</span></div>
+            <div><strong>{analytics.totals.enrollments || 0}</strong><span>Total enrollments</span></div>
+            <div><strong>{analytics.totals.averageCompletion || 0}%</strong><span>Average completion</span></div>
+          </div>
+
+          <div className="analytics-chart-grid">
+            <article className="analytics-chart-card">
+              <div><p className="analytics-label">COURSE REACH</p><h3>Enrollment by course</h3></div>
+              <div className="analytics-chart"><AnalyticsChart type="bar" data={enrollmentChart} options={{ ...chartOptions, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, max: undefined } } }} ariaLabel="Bar chart showing enrollment by course" /></div>
+            </article>
+            <article className="analytics-chart-card">
+              <div><p className="analytics-label">LEARNER PERFORMANCE</p><h3>{selectedAnalyticsCourse?.title || "Select a course"}</h3></div>
+              <div className="analytics-chart"><AnalyticsChart type="bar" data={performanceChart} options={performanceChartOptions} ariaLabel="Bar chart showing student completion and assessment percentages" /></div>
+            </article>
+          </div>
+
+          <div className="analytics-students">
+            <div><p className="analytics-label">NEXT BEST ACTION</p><h3>Recommendations for every learner</h3></div>
+            {selectedAnalyticsCourse?.students.length ? selectedAnalyticsCourse.students.map((student) => (
+              <div className="analytics-student-row" key={student.id}>
+                <div><strong>{student.name}</strong><span>{student.email}</span></div>
+                <span className="analytics-completion">{student.completion}% complete · {student.assessmentScore === null ? "Assessment pending" : `${student.assessmentScore}% assessment`}</span>
+                <p>{student.recommendation}</p>
+              </div>
+            )) : <p className="analytics-empty">No learner activity is recorded for this course yet.</p>}
+          </div>
         </section>
 
         {status.message && (

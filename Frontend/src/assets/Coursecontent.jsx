@@ -120,7 +120,10 @@ function Coursecontent() {
                     <h2>Your learning path</h2>
                     <ol>
                         {course.modules.map((module, index) => (
-                            <li key={module}><span>{String(index + 1).padStart(2, "0")}</span>{module}</li>
+                            <li key={module}>
+                                <span>{String(index + 1).padStart(2, "0")}</span>
+                                <Link to={`/StartLearning/${course.id}#lesson-${index + 1}`}>{module}</Link>
+                            </li>
                         ))}
                     </ol>
                 </div>

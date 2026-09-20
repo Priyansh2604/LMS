@@ -115,6 +115,154 @@
   color: var(--text) !important;
 }
 
+.instructor-analytics {
+  margin-top: 48px;
+  padding: clamp(24px, 4vw, 48px);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 12px 14px 0 color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.analytics-heading,
+.analytics-student-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.analytics-heading h2,
+.analytics-chart-card h3,
+.analytics-students h3 {
+  margin: 6px 0 0;
+  color: var(--text);
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.analytics-heading p:not(.instructor-eyebrow) {
+  max-width: 620px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.analytics-course-picker {
+  display: grid;
+  min-width: min(100%, 250px);
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.analytics-course-picker select {
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.analytics-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 32px 0;
+}
+
+.analytics-kpis div {
+  padding: 18px;
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.analytics-kpis strong,
+.analytics-kpis span,
+.analytics-student-row div,
+.analytics-student-row p {
+  display: block;
+}
+
+.analytics-kpis strong {
+  color: var(--text);
+  font-size: 1.8rem;
+}
+
+.analytics-kpis span,
+.analytics-student-row span,
+.analytics-student-row p,
+.analytics-empty {
+  color: var(--muted);
+}
+
+.analytics-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.analytics-chart-card,
+.analytics-students {
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+
+.analytics-label {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.analytics-chart {
+  position: relative;
+  height: 260px;
+  margin-top: 20px;
+}
+
+.analytics-students {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.analytics-student-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(100px, 0.35fr) minmax(220px, 1fr);
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.analytics-student-row strong {
+  color: var(--text);
+}
+
+.analytics-student-row span,
+.analytics-student-row p {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+}
+
+.analytics-completion {
+  color: var(--text) !important;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .analytics-heading,
+  .analytics-student-row {
+    display: grid;
+  }
+
+  .analytics-chart-grid,
+  .analytics-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .instructor-page {
     width: calc(100% - 32px);

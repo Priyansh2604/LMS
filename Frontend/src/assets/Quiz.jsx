@@ -42,6 +42,34 @@ const quizTopics = {
 
 const topicNames = [...Object.keys(quizTopics), "Mixed topics"];
 
+const practicalChallenges = {
+	"AI & Machine Learning": {
+		prompt: "Write one Python line that creates a feature matrix named X from a pandas DataFrame named data.",
+		starterCode: "# Write your solution here\n",
+		keywords: ["data", "X", "[[", "]", "iloc", "drop"],
+	},
+	Cybersecurity: {
+		prompt: "Write a Python function called is_strong_password that returns True when a password has at least 12 characters.",
+		starterCode: "def is_strong_password(password):\n    # Write your solution here\n    pass\n",
+		keywords: ["def", "is_strong_password", "len", "12", "return"],
+	},
+	"Data Analytics": {
+		prompt: "Write a SQL query that returns the average salary from a table named employees.",
+		starterCode: "-- Write your SQL query here\n",
+		keywords: ["select", "avg", "salary", "from", "employees"],
+	},
+	IoT: {
+		prompt: "Write a JavaScript function called isSafeTemperature that returns true when a sensor value is between 0 and 40.",
+		starterCode: "function isSafeTemperature(value) {\n  // Write your solution here\n}\n",
+		keywords: ["function", "isSafeTemperature", "value", "return", "40"],
+	},
+	Development: {
+		prompt: "Write a JavaScript function called add that returns the sum of two numbers.",
+		starterCode: "function add(first, second) {\n  // Write your solution here\n}\n",
+		keywords: ["function", "add", "first", "second", "return"],
+	},
+};
+
 function getRandomQuestions(topic) {
 	const questions = topic === "Mixed topics"
 		? Object.entries(quizTopics).flatMap(([questionTopic, topicQuestions]) => (
@@ -49,7 +77,15 @@ function getRandomQuestions(topic) {
 		))
 		: quizTopics[topic].map(([question, options, answer]) => ({ topic, question, options, answer }));
 
-	return questions.sort(() => Math.random() - 0.5).slice(0, 5);
+	return questions.sort(() => Math.random() - 0.5).slice(0, 5).map((question, index) => {
+		if (index === 1) return { ...question, mode: "fill", prompt: `Complete the statement: ${question.question}`, expectedAnswer: question.options[question.answer] };
+		if (index === 2) return { ...question, mode: "scenario" };
+		if (index === 3) {
+			const challenge = practicalChallenges[question.topic] || practicalChallenges.Development;
+			return { ...question, ...challenge, mode: "code" };
+		}
+		return { ...question, mode: "choice" };
+	});
 }
 
 function Quiz() {
@@ -57,6 +93,8 @@ function Quiz() {
 	const [activeQuestions, setActiveQuestions] = useState([]);
 	const [currentQuestion, setCurrentQuestion] = useState(0);
 	const [selectedOption, setSelectedOption] = useState(null);
+	const [textResponse, setTextResponse] = useState("");
+	const [codeCheck, setCodeCheck] = useState(null);
 	const [score, setScore] = useState(0);
 	const [answeredQuestions, setAnsweredQuestions] = useState([]);
 	const [isComplete, setIsComplete] = useState(false);
@@ -69,18 +107,44 @@ function Quiz() {
 		setActiveQuestions(getRandomQuestions(topic));
 		setCurrentQuestion(0);
 		setSelectedOption(null);
+		setTextResponse("");
+		setCodeCheck(null);
 		setScore(0);
 		setAnsweredQuestions([]);
 		setIsComplete(false);
+		localStorage.removeItem("learnlySkillPassportDraft");
 	}
 
 	function submitAnswer() {
-		if (selectedOption === null) return;
+		const isCodeQuestion = question?.mode === "code";
+		const isTextQuestion = question?.mode === "fill";
+		if ((selectedOption === null && !isTextQuestion && !isCodeQuestion) || ((isTextQuestion || isCodeQuestion) && !textResponse.trim())) return;
 
-		const nextScore = score + (selectedOption === question.answer ? 1 : 0);
+		const isCorrect = isCodeQuestion
+			? question.keywords.every((keyword) => textResponse.toLowerCase().includes(keyword.toLowerCase()))
+			: isTextQuestion
+				? textResponse.trim().toLowerCase() === question.expectedAnswer.toLowerCase()
+				: selectedOption === question.answer;
+		const nextScore = score + (isCorrect ? 1 : 0);
 		setScore(nextScore);
-		const nextAnswers = [...answeredQuestions, { topic: question.topic, correct: selectedOption === question.answer }];
+		const nextAnswers = [...answeredQuestions, {
+			topic: question.topic,
+			question: question.question,
+			questionType: question.mode,
+			selectedAnswer: isCodeQuestion || isTextQuestion ? textResponse : question.options[selectedOption],
+			correctAnswer: isCodeQuestion ? "Solution meets the practical task requirements" : question.options[question.answer],
+			correct: isCorrect,
+		}];
 		setAnsweredQuestions(nextAnswers);
+		const nextPercentage = Math.round((nextScore / (currentQuestion + 1)) * 100);
+		localStorage.setItem("learnlySkillPassportDraft", JSON.stringify({
+			topic: selectedTopic,
+			answered: currentQuestion + 1,
+			total: quizQuestions.length,
+			percentage: nextPercentage,
+			answers: nextAnswers,
+			updatedAt: new Date().toISOString(),
+		}));
 
 		if (currentQuestion === quizQuestions.length - 1) {
 			const topicScores = nextAnswers.reduce((scores, answer) => {
@@ -91,14 +155,25 @@ function Quiz() {
 				topic: selectedTopic,
 				percentage: Math.round((nextScore / quizQuestions.length) * 100),
 				topicScores,
+				answers: nextAnswers,
+				answered: nextAnswers.length,
+				total: quizQuestions.length,
 				createdAt: new Date().toISOString(),
 			}));
+			localStorage.removeItem("learnlySkillPassportDraft");
 			setIsComplete(true);
 			return;
 		}
 
 		setCurrentQuestion((previousQuestion) => previousQuestion + 1);
 		setSelectedOption(null);
+		setTextResponse("");
+		setCodeCheck(null);
+	}
+
+	function runCodeCheck() {
+		const passed = question?.mode === "code" && question.keywords.every((keyword) => textResponse.toLowerCase().includes(keyword.toLowerCase()));
+		setCodeCheck(passed ? "The solution contains the expected structure. Submit it when ready." : "The check found missing requirements. Review the task and try again.");
 	}
 
 	function restartQuiz() {
@@ -106,9 +181,12 @@ function Quiz() {
 		setActiveQuestions([]);
 		setCurrentQuestion(0);
 		setSelectedOption(null);
+		setTextResponse("");
+		setCodeCheck(null);
 		setScore(0);
 		setAnsweredQuestions([]);
 		setIsComplete(false);
+		localStorage.removeItem("learnlySkillPassportDraft");
 	}
 
 	if (isComplete) {
@@ -176,7 +254,20 @@ function Quiz() {
 				<div className="quiz-question-card">
 					<span className="quiz-topic">{question.topic}</span>
 					<h2>{question.question}</h2>
-					<div className="quiz-options" role="radiogroup" aria-label="Answer choices">
+					{question.mode === "code" && (
+						<div className="practical-question">
+							<p className="question-mode-label">PRACTICAL CODING TASK</p>
+							<h3>{question.prompt}</h3>
+							<textarea className="code-editor" value={textResponse || question.starterCode} onChange={(event) => setTextResponse(event.target.value)} spellCheck="false" aria-label="Code answer" />
+							<button className="code-check-button" type="button" onClick={runCodeCheck}>Run check</button>
+							{codeCheck && <p className={`code-check-result ${codeCheck.startsWith("The solution") ? "is-success" : "is-warning"}`}>{codeCheck}</p>}
+						</div>
+					)}
+					{question.mode === "fill" && (
+						<label className="fill-question"><span className="question-mode-label">FILL IN THE BLANK</span><strong>{question.prompt}</strong><input value={textResponse} onChange={(event) => setTextResponse(event.target.value)} placeholder="Type your answer" /></label>
+					)}
+					{(question.mode === "choice" || question.mode === "scenario") && <div className="quiz-options" role="radiogroup" aria-label={question.mode === "scenario" ? "Real world scenario answers" : "Answer choices"}>
+						{question.mode === "scenario" && <p className="question-mode-label">REAL-WORLD SCENARIO</p>}
 						{question.options.map((option, optionIndex) => (
 							<button
 								className={`quiz-option ${selectedOption === optionIndex ? "selected" : ""}`}
@@ -190,11 +281,18 @@ function Quiz() {
 								<span>{option}</span>
 							</button>
 						))}
-					</div>
-					<button className="quiz-action" type="button" disabled={selectedOption === null} onClick={submitAnswer}>
+					</div>}
+					<button className="quiz-action" type="button" disabled={selectedOption === null && !textResponse.trim()} onClick={submitAnswer}>
 						{currentQuestion === quizQuestions.length - 1 ? "Finish quiz" : "Next question"}
 					</button>
 				</div>
+				{answeredQuestions.length > 0 && (
+					<div className="quiz-live-report" aria-live="polite">
+						<div><span>LIVE REPORT</span><strong>{answeredQuestions.length} / {quizQuestions.length} answered</strong></div>
+						<div><span>Current accuracy</span><strong>{Math.round((score / answeredQuestions.length) * 100)}%</strong></div>
+						<div><span>Next report</span><strong>{currentQuestion === quizQuestions.length - 1 ? "Ready to generate" : "Updates after your answer"}</strong></div>
+					</div>
+				)}
 			</section>
 		</main>
 	);

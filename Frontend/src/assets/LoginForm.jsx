@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./LoginForm.css";
 
@@ -14,6 +14,18 @@ const initialForm = {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+function getStoredUser() {
+	try {
+		const savedUser = localStorage.getItem("learnlyUser");
+		if (!savedUser) return null;
+
+		const parsedUser = JSON.parse(savedUser);
+		return parsedUser && typeof parsedUser === "object" ? parsedUser : null;
+	} catch {
+		return null;
+	}
+}
+
 function LoginForm() {
 	const [mode, setMode] = useState("signup");
 	const [form, setForm] = useState(initialForm);
@@ -22,6 +34,13 @@ function LoginForm() {
 	const location = useLocation();
 	const isSignup = mode === "signup";
 	const isLoading = requestState.status === "loading";
+
+	useEffect(() => {
+		const currentUser = getStoredUser();
+		if (currentUser?.id || currentUser?.email) {
+			navigate(location.state?.from || "/", { replace: true });
+		}
+	}, [navigate, location.state?.from]);
 
 	function updateField(event) {
 		const { name, value } = event.target;
@@ -55,7 +74,12 @@ function LoginForm() {
 				throw new Error(result.message || "Something went wrong. Please try again.");
 			}
 
-			localStorage.setItem("learnlyUser", JSON.stringify(result.user));
+			const authUser = result?.user && typeof result.user === "object" ? result.user : null;
+			if (!authUser) {
+				throw new Error("The server did not return a valid user profile.");
+			}
+
+			localStorage.setItem("learnlyUser", JSON.stringify(authUser));
 			window.dispatchEvent(new Event("learnly-auth-change"));
 			setRequestState({ status: "success", message: result.message });
 			const destination = location.state?.from || "/";

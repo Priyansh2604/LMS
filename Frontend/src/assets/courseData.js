@@ -1,4 +1,4 @@
-export const defaultCourses = [
+const baseCourses = [
   {
     id: 1,
     title: "DevOps A to Z Mastery",
@@ -107,6 +107,150 @@ export const defaultCourses = [
   },
 ];
 
- export const Courses = defaultCourses;
-export default defaultCourses;
+const learningContent = {
+  1: {
+    lessons: [
+      "Map the DevOps lifecycle from planning and source control through release, feedback, and continuous improvement.",
+      "Use Linux commands, networking concepts, and small scripts to inspect services and automate repeatable work.",
+      "Package an application into a reproducible Docker image and understand how containers are scheduled and scaled.",
+      "Compare core AWS deployment building blocks and choose an infrastructure shape that fits the service you are shipping.",
+      "Connect CI/CD, Kubernetes, and observability so releases are repeatable, measurable, and easier to recover.",
+    ],
+    quiz: [
+      ["What is the main goal of CI/CD?", ["Automate reliable build, test, and delivery steps", "Replace source control", "Remove monitoring", "Store passwords"], 0],
+      ["What does a container package?", ["An application and its dependencies", "Only a domain name", "A physical server", "A user profile"], 0],
+      ["Which tool orchestrates containers?", ["Kubernetes", "Photoshop", "Excel", "SMTP"], 0],
+      ["What does monitoring help a team do?", ["Detect system behavior and failures", "Hide deployments", "Delete logs", "Avoid testing"], 0],
+      ["What is infrastructure as code?", ["Defining infrastructure in versioned files", "Drawing a network diagram only", "Buying hardware manually", "Writing UI styles"], 0],
+    ],
+  },
+  2: {
+    lessons: [
+      "Practice Java classes, interfaces, composition, and encapsulation to model behavior without tightly coupling components.",
+      "Design Spring Boot REST endpoints with clear resources, validation, status codes, and error responses.",
+      "Persist domain objects with SQL, JPA, and Hibernate while understanding transactions and relationship boundaries.",
+      "Connect a browser client to an authenticated backend and keep user input, sessions, and permissions under control.",
+      "Use Maven, automated tests, and deployment configuration to package a service that can be maintained in production.",
+    ],
+    quiz: [
+      ["What does encapsulation protect?", ["An object's internal state and rules", "A server rack", "A CSS stylesheet", "A database connection only"], 0],
+      ["What does a REST endpoint expose?", ["A resource operation over HTTP", "A Java compiler", "A screen resolution", "A password vault"], 0],
+      ["What is JPA used for?", ["Mapping Java objects to relational data", "Styling HTML", "Routing network cables", "Compressing images"], 0],
+      ["Why validate API input?", ["To reject invalid or unsafe data early", "To make requests slower", "To remove authentication", "To hide errors"], 0],
+      ["What does Maven manage?", ["Builds and project dependencies", "Browser cookies", "Cloud electricity", "Design mockups"], 0],
+    ],
+  },
+  3: {
+    lessons: [
+      "Estimate time and space complexity, then use arrays and searching patterns to make a solution efficient and explainable.",
+      "Choose linked lists, stacks, or queues based on access patterns, mutation needs, and the order in which work should be processed.",
+      "Use trees, heaps, and hash tables to organize data for fast lookup, priority selection, and hierarchical relationships.",
+      "Traverse graphs with BFS and DFS, tracking visited nodes and selecting the right representation for the problem.",
+      "Compare sorting and dynamic programming strategies by breaking a problem into reusable subproblems and measurable tradeoffs.",
+    ],
+    quiz: [
+      ["What does Big O describe?", ["How resource use grows with input size", "A programming language", "A database row", "A UI color"], 0],
+      ["Which structure follows last-in, first-out order?", ["Stack", "Queue", "Graph", "Hash table"], 0],
+      ["What is a heap useful for?", ["Efficient priority access", "Storing paragraphs", "Rendering a webpage", "Encrypting a password"], 0],
+      ["What does BFS use to explore layers?", ["A queue", "A stack only", "A compiler", "A spreadsheet"], 0],
+      ["What is dynamic programming based on?", ["Overlapping subproblems and stored results", "Random guesses", "Deleting input", "Only nested loops"], 0],
+    ],
+  },
+  4: {
+    lessons: [
+      "Frame an analysis question, inspect a dataset, and document assumptions before changing or calculating anything.",
+      "Write SQL with filters, joins, grouping, and aggregates to turn relational tables into useful business questions.",
+      "Use pandas to inspect, clean, reshape, and summarize data while keeping transformations reproducible.",
+      "Select charts that match the question, then build a dashboard that makes the important comparison easy to see.",
+      "Turn evidence into a recommendation by explaining uncertainty, audience impact, and the next action clearly.",
+    ],
+    quiz: [
+      ["Why define an analysis question first?", ["It keeps the work focused on a decision", "It removes the need for data", "It guarantees a result", "It replaces validation"], 0],
+      ["Which SQL clause groups rows for aggregation?", ["GROUP BY", "STYLE BY", "ORDER HTML", "JOIN CSS"], 0],
+      ["What does pandas help with?", ["Tabular data preparation and analysis", "Network security", "Container orchestration", "Video editing"], 0],
+      ["What makes a chart effective?", ["It makes the relevant comparison clear", "It uses the most colors possible", "It hides labels", "It always uses 3D"], 0],
+      ["What should a recommendation include?", ["Evidence, context, and a clear next action", "Only raw rows", "A password", "Unverified guesses"], 0],
+    ],
+  },
+  5: {
+    lessons: [
+      "Recognize threats, vulnerabilities, and attack surfaces, then apply a practical risk mindset to everyday decisions.",
+      "Strengthen identity with unique credentials, multi-factor authentication, least privilege, and careful access reviews.",
+      "Understand network boundaries, firewalls, secure protocols, and the signals that indicate suspicious traffic.",
+      "Use encryption and secure development habits to protect data in transit, at rest, and inside applications.",
+      "Build an incident response loop that detects, contains, recovers from, and learns from security events.",
+    ],
+    quiz: [
+      ["What is least privilege?", ["Granting only the access needed for a task", "Giving everyone admin rights", "Sharing one password", "Removing all accounts"], 0],
+      ["What does phishing commonly target?", ["Credentials and sensitive information", "Screen brightness", "CPU fans", "File colors"], 0],
+      ["What does encryption provide?", ["Confidentiality by transforming readable data", "Unlimited storage", "Faster Wi-Fi", "Automatic backups"], 0],
+      ["What does a firewall control?", ["Network traffic based on rules", "Keyboard layout", "User birthdays", "Image resolution"], 0],
+      ["What is the first response priority during an incident?", ["Contain the impact while preserving evidence", "Delete every log", "Announce blame", "Disable all updates"], 0],
+    ],
+  },
+  6: {
+    lessons: [
+      "Distinguish AI, machine learning, and deep learning while framing a useful prediction problem and its success measure.",
+      "Prepare datasets by handling missing values, selecting features, and splitting examples so evaluation is trustworthy.",
+      "Compare regression and classification models and connect each approach to the kind of output a problem requires.",
+      "Evaluate predictions with appropriate metrics, diagnose overfitting, and improve a model without hiding poor results.",
+      "Ship a small responsible ML project with explainable decisions, documented limits, and attention to fairness and privacy.",
+    ],
+    quiz: [
+      ["What does a training dataset provide?", ["Examples from which a model learns patterns", "Final user passwords", "A replacement for evaluation", "Only images"], 0],
+      ["What is a feature?", ["An input signal used by a model", "A deployment server", "A test account", "A chart title"], 0],
+      ["What does classification predict?", ["A category or label", "A continuous amount only", "A network cable", "A file extension"], 0],
+      ["What is overfitting?", ["Learning training examples too closely", "Training with no examples", "A faster algorithm", "A secure password"], 0],
+      ["Why document model limitations?", ["To make decisions and risks understandable", "To avoid testing", "To guarantee fairness", "To remove data"], 0],
+    ],
+  },
+  7: {
+    lessons: [
+      "Map an IoT system from sensors and actuators to gateways, networks, cloud services, and the decisions they enable.",
+      "Choose sensors and communication protocols based on signal quality, power limits, distance, and the environment involved.",
+      "Compare edge and cloud processing to decide where latency, cost, privacy, and reliability should be optimized.",
+      "Design a data pipeline that registers devices, validates readings, and manages updates across a growing fleet.",
+      "Secure connected products with strong device identity, encrypted communication, safe updates, and a clear recovery plan.",
+    ],
+    quiz: [
+      ["What does an IoT sensor do?", ["Collects information from its environment", "Compiles a website", "Encrypts every backup", "Displays a spreadsheet"], 0],
+      ["Why use a gateway?", ["To connect local devices to another network or service", "To replace every sensor", "To remove device identity", "To store paper records"], 0],
+      ["When is edge processing useful?", ["When local, low-latency decisions matter", "Only when there is no sensor", "When data must never be read", "Only for printing"], 0],
+      ["What does device management include?", ["Registration, health, configuration, and updates", "Only changing colors", "Deleting telemetry", "Removing authentication"], 0],
+      ["Why secure IoT devices?", ["They can expose physical systems and sensitive data", "Security increases battery size", "It removes connectivity", "It prevents all updates"], 0],
+    ],
+  },
+};
+
+const courseVideoSources = {
+  1: ["RGOj5yH7evk", "3c-iBn73dDE", "X48VuDVv0do", "ulprqHHWlng", "9pZ2xmsSDdo"],
+  2: ["8cm1x4bC610", "eIrMbAQSU34", "vtPkZShrvXQ", "35EQXmHKZYs", "A74TOX803D0"],
+  3: ["V6mKVRU1evU", "8hly31xKli0", "RBSGKlAvoiM", "pKO9UjSeLew", "fAAZixBzIAI"],
+  4: ["U4c2pYt3RZ8", "qwAFL1597eM", "r-uOLxNrNk8", "yJw0x4m3K2Q", "9NUa2Tn7cXQ"],
+  5: ["5Q1dfB0YJm4", "inWWhr5tnEA", "3Kq1MIfTWCE", "lPA0QwZ7pAA", "fNzpcB2uY6E"],
+  6: ["Gv9_4yMHFAM", "aircAruvnKk", "GwIo3gDZCVQ", "tPYj3fFJGjk", "ukzFI9rgwfU"],
+  7: ["LlhmzVL5bm8", "6mBO2vqLv38", "aK1L7n5pQ2M", "qj3w9kLm2P0", "IoT7mN2qX8A"],
+};
+
+const enrichedCourses = baseCourses.map((course) => {
+  const content = learningContent[course.id];
+  if (!content) return course;
+
+  return {
+    ...course,
+    lessons: course.modules.map((module, index) => ({
+      id: index + 1,
+      title: module,
+      description: content.lessons[index],
+      videoTitle: `${module} video lesson`,
+      videoUrl: `https://www.youtube.com/watch?v=${courseVideoSources[course.id][index]}`,
+      duration: `${10 + index * 3} min`,
+    })),
+    finalQuiz: content.quiz.map(([question, options, answer]) => ({ question, options, answer })),
+  };
+});
+
+export const defaultCourses = enrichedCourses;
+export const Courses = enrichedCourses;
+export default enrichedCourses;
 

@@ -1,6 +1,7 @@
 import "./Header.css";
 import { memo, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import LanguageSelector from "./LanguageSelector";
 
 function Header({ theme, setTheme }) {
   const [user, setUser] = useState(() => getStoredUser());
@@ -48,6 +49,7 @@ function Header({ theme, setTheme }) {
           <span className="nav-link"><Link to="/QuizPage">Take quiz</Link></span>
         </nav>
         <div className="header-actions">
+          <LanguageSelector />
           <button
             type="button"
             className={`theme-toggle-btn ${theme === "light" ? "light-mode" : "dark-mode"}`}
@@ -82,7 +84,11 @@ function Header({ theme, setTheme }) {
 
 function getStoredUser() {
   try {
-    return JSON.parse(localStorage.getItem("learnlyUser"));
+    const savedUser = localStorage.getItem("learnlyUser");
+    if (!savedUser) return null;
+
+    const parsedUser = JSON.parse(savedUser);
+    return parsedUser && typeof parsedUser === "object" ? parsedUser : null;
   } catch {
     return null;
   }

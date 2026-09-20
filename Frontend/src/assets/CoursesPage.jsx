@@ -2,7 +2,7 @@
 import "./CoursesPage.css";
 import Courses from "./Courses";
 import { useEffect, useState } from "react";
-import { defaultCourses } from "./courseData";
+import { Link } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -70,11 +70,12 @@ const courseCatalog = [
 ];
 
 function CoursesPage() {
-	const [courses, setCourses] = useState(defaultCourses);
+	const [courses, setCourses] = useState(courseCatalog);
 	const [loading, setLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState("");
 	const [selectedTopic, setSelectedTopic] = useState("All topics");
 	const [durationSort, setDurationSort] = useState("featured");
+	const [completedCourses, setCompletedCourses] = useState([]);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -91,14 +92,14 @@ function CoursesPage() {
 					throw new Error(data.message || "Unable to load the course catalog from the backend.");
 				}
 
-				const nextCourses = Array.isArray(data.courses) && data.courses.length > 0 ? data.courses : defaultCourses;
+				const nextCourses = Array.isArray(data.courses) && data.courses.length > 0 ? data.courses : courseCatalog;
 
 				if (isMounted) {
 					setCourses(nextCourses);
 				}
 			} catch (error) {
 				if (isMounted) {
-					setCourses(defaultCourses);
+					setCourses(courseCatalog);
 					setErrorMessage(error.message || "Unable to fetch course data from the API.");
 				}
 			} finally {
@@ -112,6 +113,25 @@ function CoursesPage() {
 
 		return () => {
 			isMounted = false;
+		};
+	}, []);
+
+	useEffect(() => {
+		function refreshCompletedCourses() {
+			try {
+				const certificates = JSON.parse(localStorage.getItem("learnlyCertificates") || "[]");
+				setCompletedCourses(Array.isArray(certificates) ? certificates : []);
+			} catch {
+				setCompletedCourses([]);
+			}
+		}
+
+		refreshCompletedCourses();
+		window.addEventListener("learnly-course-completed", refreshCompletedCourses);
+		window.addEventListener("storage", refreshCompletedCourses);
+		return () => {
+			window.removeEventListener("learnly-course-completed", refreshCompletedCourses);
+			window.removeEventListener("storage", refreshCompletedCourses);
 		};
 	}, []);
 
@@ -154,6 +174,16 @@ function CoursesPage() {
 			</section>
 
 			<section className="course-catalog" aria-labelledby="course-catalog-title">
+				{completedCourses.length > 0 && (
+					<div className="course-completion-report">
+						<div>
+							<p className="courses-eyebrow">YOUR LEARNING REPORT</p>
+							<h2>{completedCourses.length} course{completedCourses.length === 1 ? "" : "s"} completed</h2>
+							<p>Your completed courses and assessment results are ready to review.</p>
+						</div>
+						<Link to="/SkillPassport">Open skill report <span aria-hidden="true">-&gt;</span></Link>
+					</div>
+				)}
 				{loading && <p className="course-result-count">Loading course catalog from the backend…</p>}
 				{!loading && errorMessage && (
 					<p className="course-result-count" style={{ color: "#fca5a5" }}>{errorMessage}</p>

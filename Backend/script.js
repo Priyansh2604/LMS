@@ -1,8 +1,30 @@
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const users = [];
+const usersFile = path.join(__dirname, "users.json");
+
+function loadUsers() {
+    try {
+        const savedUsers = JSON.parse(fs.readFileSync(usersFile, "utf8"));
+        return Array.isArray(savedUsers) ? savedUsers : [];
+    } catch (error) {
+        if (error.code !== "ENOENT") {
+            console.warn("Unable to read users.json. Starting with an empty user list.");
+        }
+
+        return [];
+    }
+}
+
+function saveUsers() {
+    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+}
+
+const users = loadUsers();
 const topicOptions = [
     "AI & Machine Learning",
     "Cybersecurity",
@@ -246,12 +268,264 @@ app.get("/api/health", (req, res) => {
     res.json({ status: "ok", service: "learnly-api" });
 });
 
+function normalizeTranslatedTextPayload(payload) {
+    if (Array.isArray(payload)) {
+        return payload.flatMap((item) => normalizeTranslatedTextPayload(item));
+    }
+
+    if (payload && typeof payload === "object") {
+        if (Array.isArray(payload.translatedText)) {
+            return payload.translatedText.flatMap((item) => normalizeTranslatedTextPayload(item));
+        }
+
+        if (typeof payload.translatedText === "string") {
+            return [payload.translatedText];
+        }
+
+        if (Array.isArray(payload.data)) {
+            return payload.data.flatMap((item) => normalizeTranslatedTextPayload(item));
+        }
+
+        if (payload.text && typeof payload.text === "string") {
+            return [payload.text];
+        }
+    }
+
+    if (typeof payload === "string") {
+        return [payload];
+    }
+
+    return [];
+}
+
+async function translateWithGemini(sourceTexts, targetLanguage) {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+        throw new Error("GEMINI_API_KEY is missing.");
+    }
+
+    const preferredModels = [process.env.GEMINI_MODEL || "gemini-flash-latest"];
+    let lastError = "Gemini translation request failed.";
+
+    for (const modelName of preferredModels) {
+        const prompt = `Translate each item in this JSON array to ${targetLanguage}. Return only valid JSON in the format ["translated1","translated2",...], keeping the same number of items and preserving meaning as closely as possible. Do not add explanations. Input: ${JSON.stringify(sourceTexts)}`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: prompt }],
+                    }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        temperature: 0.2,
+                    },
+                }),
+                signal: AbortSignal.timeout(20000),
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const message = result?.error?.message || `Gemini model ${modelName} failed.`;
+                lastError = message;
+                if ([429].includes(response.status)) {
+                    throw new Error(message);
+                }
+                if (![400, 404].includes(response.status)) {
+                    throw new Error(message);
+                }
+                continue;
+            }
+
+            const rawText = result?.candidates?.[0]?.content?.parts?.map((part) => part?.text || "").join("") || "";
+            let parsed = [];
+
+            try {
+                parsed = JSON.parse(rawText);
+            } catch (error) {
+                const match = rawText.match(/\[[\s\S]*\]/);
+                if (match) {
+                    try {
+                        parsed = JSON.parse(match[0]);
+                    } catch (innerError) {
+                        throw new Error("Gemini returned an invalid JSON array for translations.");
+                    }
+                } else {
+                    throw new Error("Gemini returned no valid translated array.");
+                }
+            }
+
+            if (!Array.isArray(parsed)) {
+                throw new Error("Gemini response was not a JSON array.");
+            }
+
+            const translatedTexts = parsed.map((item) => String(item));
+            if (translatedTexts.length !== sourceTexts.length) {
+                throw new Error("Gemini returned a different number of translations than the original texts.");
+            }
+
+            return translatedTexts;
+        } catch (error) {
+            lastError = error?.message || lastError;
+        }
+    }
+
+    throw new Error(lastError);
+}
+
+async function translateWithLibreTranslate(sourceTexts, targetLanguage) {
+    const libreTranslateUrl = process.env.LIBRETRANSLATE_URL || "https://libretranslate.com";
+    const requestBody = {
+        q: sourceTexts.length === 1 ? sourceTexts[0] : sourceTexts,
+        source: "auto",
+        target: targetLanguage,
+        format: "text",
+    };
+
+    if (process.env.LIBRETRANSLATE_API_KEY) {
+        requestBody.api_key = process.env.LIBRETRANSLATE_API_KEY;
+    }
+
+    const translationResponse = await fetch(`${libreTranslateUrl.replace(/\/$/, "")}/translate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(15000),
+    });
+
+    const result = await translationResponse.json().catch(() => ({}));
+    const translatedTexts = normalizeTranslatedTextPayload(result);
+
+    if (!translationResponse.ok || translatedTexts.length !== sourceTexts.length) {
+        throw new Error(result.error || "LibreTranslate could not translate this content.");
+    }
+
+    return translatedTexts;
+}
+
+app.post("/api/translate", async (req, res) => {
+    const { text, texts, target } = req.body || {};
+    const sourceTexts = Array.isArray(texts)
+        ? texts.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean)
+        : typeof text === "string" && text.trim()
+            ? [text.trim()]
+            : [];
+    const targetLanguage = typeof target === "string" ? target.trim().toLowerCase() : "";
+
+    if (!sourceTexts.length || !targetLanguage) {
+        return res.status(400).json({ message: "Text and target language are required." });
+    }
+
+    try {
+        let translatedTexts = [];
+        const libreTranslateUrl = process.env.LIBRETRANSLATE_URL?.trim();
+        const hasLibreTranslate = Boolean(
+            process.env.LIBRETRANSLATE_API_KEY?.trim()
+            || (libreTranslateUrl && libreTranslateUrl !== "https://libretranslate.com")
+        );
+
+        if (process.env.GEMINI_API_KEY?.trim()) {
+            try {
+                translatedTexts = await translateWithGemini(sourceTexts, targetLanguage);
+            } catch (geminiError) {
+                if (!hasLibreTranslate) {
+                    throw geminiError;
+                }
+                translatedTexts = await translateWithLibreTranslate(sourceTexts, targetLanguage);
+            }
+        } else if (hasLibreTranslate) {
+            translatedTexts = await translateWithLibreTranslate(sourceTexts, targetLanguage);
+        } else {
+            return res.status(503).json({
+                message: "No translation provider is configured. Set GEMINI_API_KEY or LIBRETRANSLATE_URL.",
+            });
+        }
+
+        return res.json({ translatedText: sourceTexts.length === 1 ? translatedTexts[0] : translatedTexts });
+    } catch (error) {
+        const message = error?.message || "Translation failed.";
+        const status = /quota|rate limit|billing|exceeded/i.test(message) ? 503 : 502;
+        return res.status(status).json({ message });
+    }
+});
+
 app.get("/api/courses", (req, res) => {
     res.json({
         courses: courses.map((course) => ({
             ...course,
             lessons: course.lessons || [],
         })),
+    });
+});
+
+app.get("/api/analytics", (req, res) => {
+    const learners = users.filter((user) => user.role !== "instructor");
+
+    const courseAnalytics = courses.map((course) => {
+        const enrolledLearners = learners.filter((learner) => {
+            const hasProgress = (learner.progress || []).some(
+                (progress) => String(progress.courseId) === String(course.id),
+            );
+            return learner.courseInterest === course.topic || hasProgress;
+        });
+
+        const students = enrolledLearners.map((learner) => {
+            const watchedLessons = new Set(
+                (learner.progress || [])
+                    .filter((progress) => String(progress.courseId) === String(course.id) && progress.watched)
+                    .map((progress) => String(progress.lessonId)),
+            ).size;
+            const totalLessons = Math.max(course.modules?.length || course.lessons?.length || 0, 1);
+            const completion = Math.min(100, Math.round((watchedLessons / totalLessons) * 100));
+            const assessment = (learner.assessments || []).find(
+                (item) => String(item.courseId) === String(course.id),
+            );
+            const assessmentScore = assessment?.score ?? null;
+            const recommendation = assessmentScore !== null && assessmentScore < 80
+                ? "Revisit the assessment topics, then retry the final check before moving on."
+                : completion >= 80
+                ? "Ready for an applied project or advanced challenge."
+                : completion >= 40
+                    ? "Review the next lesson and practise with a short exercise."
+                    : "Start with the first lesson and schedule two focused study sessions.";
+
+            return {
+                id: learner.id,
+                name: learner.name,
+                email: learner.email,
+                completion,
+                assessmentScore,
+                watchedLessons,
+                totalLessons,
+                recommendation,
+            };
+        });
+
+        const averageCompletion = students.length
+            ? Math.round(students.reduce((total, student) => total + student.completion, 0) / students.length)
+            : 0;
+
+        return {
+            id: course.id,
+            title: course.title,
+            topic: course.topic,
+            enrollment: students.length,
+            averageCompletion,
+            students,
+        };
+    });
+
+    return res.json({
+        courses: courseAnalytics,
+        totals: {
+            learners: new Set(courseAnalytics.flatMap((course) => course.students.map((student) => student.id))).size,
+            enrollments: courseAnalytics.reduce((total, course) => total + course.enrollment, 0),
+            averageCompletion: courseAnalytics.length
+                ? Math.round(courseAnalytics.reduce((total, course) => total + course.averageCompletion, 0) / courseAnalytics.length)
+                : 0,
+        },
     });
 });
 
@@ -467,6 +741,7 @@ app.post("/api/auth/register", (req, res) => {
     };
 
     users.push(user);
+    saveUsers();
 
     return res.status(201).json({
         message: "Account created successfully",
@@ -497,6 +772,80 @@ app.post("/api/auth/login", (req, res) => {
     });
 });
 
+function sanitizeCertificate(payload = {}, source = "external") {
+    const title = String(payload.title || payload.courseTitle || "").trim();
+    const issuer = String(payload.issuer || "").trim();
+    const credentialUrl = String(payload.credentialUrl || "").trim();
+    const issueDate = String(payload.issueDate || "").trim();
+    const imageData = typeof payload.imageData === "string" && /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(payload.imageData)
+        ? payload.imageData.slice(0, 4_000_000)
+        : "";
+
+    if (!title || !issuer) return null;
+
+    if (credentialUrl) {
+        try {
+            const url = new URL(credentialUrl);
+            if (!['http:', 'https:'].includes(url.protocol)) return null;
+        } catch {
+            return null;
+        }
+    }
+
+    return {
+        id: payload.id || `cert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        title,
+        issuer,
+        issueDate,
+        credentialUrl,
+        imageData,
+        credentialId: String(payload.credentialId || "").trim(),
+        skills: Array.isArray(payload.skills)
+            ? payload.skills.map((skill) => String(skill).trim()).filter(Boolean).slice(0, 12)
+            : String(payload.skills || "").split(",").map((skill) => skill.trim()).filter(Boolean).slice(0, 12),
+        source,
+        courseId: payload.courseId || null,
+        score: Number.isFinite(Number(payload.score)) ? Math.round(Number(payload.score)) : null,
+        createdAt: payload.createdAt || new Date().toISOString(),
+    };
+}
+
+function getCompletedCourses(user) {
+    return (user.assessments || [])
+        .filter((assessment) => Number(assessment.score) >= 80)
+        .map((assessment) => {
+            const course = courses.find((item) => String(item.id) === String(assessment.courseId));
+            return course
+                ? {
+                    courseId: course.id,
+                    title: course.title,
+                    topic: course.topic,
+                    score: assessment.score,
+                    completedAt: assessment.completedAt,
+                }
+                : null;
+        })
+        .filter(Boolean);
+}
+
+function getRecommendations(user) {
+    const completedIds = new Set(getCompletedCourses(user).map((course) => String(course.courseId)));
+    const interest = String(user.courseInterest || "").toLowerCase();
+
+    return courses
+        .filter((course) => !completedIds.has(String(course.id)))
+        .map((course) => {
+            const matchesInterest = course.topic.toLowerCase() === interest;
+            const reason = matchesInterest
+                ? `Matches your ${course.topic} learning path.`
+                : `Builds on your interest in ${user.courseInterest || course.topic}.`;
+            return { ...course, reason, recommendationScore: matchesInterest ? 2 : 1 };
+        })
+        .sort((first, second) => second.recommendationScore - first.recommendationScore || first.id - second.id)
+        .slice(0, 3)
+        .map(({ recommendationScore, ...course }) => course);
+}
+
 app.get("/api/account/:userId", (req, res) => {
     const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
 
@@ -507,15 +856,66 @@ app.get("/api/account/:userId", (req, res) => {
     return res.json({
         user: publicUser(user),
         watchedCourses: getWatchedCourses(user),
+        certificates: Array.isArray(user.certificates) ? user.certificates : [],
+        completedCourses: getCompletedCourses(user),
+        recommendations: getRecommendations(user),
     });
+});
+
+app.post("/api/account/:userId/certificates", (req, res) => {
+    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
+    const certificate = sanitizeCertificate(req.body, "external");
+
+    if (!user || !certificate) {
+        return res.status(400).json({ message: "Certificate title and issuer are required, with a valid credential URL if provided." });
+    }
+
+    user.certificates = Array.isArray(user.certificates) ? user.certificates : [];
+    user.certificates.unshift(certificate);
+    saveUsers();
+    return res.status(201).json({ message: "Certificate added", certificate, certificates: user.certificates });
+});
+
+app.put("/api/account/:userId/certificates/:certificateId", (req, res) => {
+    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
+    const certificate = sanitizeCertificate(req.body, "external");
+
+    if (!user || !certificate) {
+        return res.status(400).json({ message: "Certificate title and issuer are required, with a valid credential URL if provided." });
+    }
+
+    user.certificates = Array.isArray(user.certificates) ? user.certificates : [];
+    const certificateIndex = user.certificates.findIndex((item) => String(item.id) === String(req.params.certificateId));
+    if (certificateIndex === -1) return res.status(404).json({ message: "Certificate not found" });
+
+    certificate.id = user.certificates[certificateIndex].id;
+    user.certificates[certificateIndex] = certificate;
+    saveUsers();
+    return res.json({ message: "Certificate updated", certificate, certificates: user.certificates });
+});
+
+app.delete("/api/account/:userId/certificates/:certificateId", (req, res) => {
+    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
+
+    if (!user) return res.status(404).json({ message: "Account not found" });
+
+    user.certificates = Array.isArray(user.certificates) ? user.certificates : [];
+    const originalCount = user.certificates.length;
+    user.certificates = user.certificates.filter((certificate) => String(certificate.id) !== String(req.params.certificateId));
+
+    if (user.certificates.length === originalCount) return res.status(404).json({ message: "Certificate not found" });
+
+    saveUsers();
+    return res.json({ message: "Certificate removed", certificates: user.certificates });
 });
 
 app.post("/api/account/:userId/progress", (req, res) => {
     const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
     const course = courses.find((item) => String(item.id) === String(req.body?.courseId));
     const lesson = course?.lessons?.find((item) => String(item.id) === String(req.body?.lessonId));
+    const moduleNumber = Number(req.body?.lessonId);
 
-    if (!user || !course || !lesson) {
+    if (!user || !course || (!lesson && (!Number.isInteger(moduleNumber) || moduleNumber < 1 || moduleNumber > course.modules.length))) {
         return res.status(404).json({ message: "Course, lesson, or account not found" });
     }
 
@@ -536,11 +936,56 @@ app.post("/api/account/:userId/progress", (req, res) => {
         });
     }
 
+    saveUsers();
+
     return res.json({
         message: "Progress saved",
         progress: user.progress,
         watchedCourses: getWatchedCourses(user),
     });
+});
+
+app.post("/api/account/:userId/assessment", (req, res) => {
+    const user = users.find((candidate) => String(candidate.id) === String(req.params.userId));
+    const course = courses.find((item) => String(item.id) === String(req.body?.courseId));
+    const score = Number(req.body?.score);
+
+    if (!user || !course || !Number.isFinite(score) || score < 0 || score > 100) {
+        return res.status(400).json({ message: "A valid account, course, and score are required" });
+    }
+
+    user.assessments = Array.isArray(user.assessments) ? user.assessments : [];
+    const existingAssessment = user.assessments.find(
+        (assessment) => String(assessment.courseId) === String(course.id),
+    );
+    const savedAssessment = {
+        courseId: course.id,
+        score: Math.round(score),
+        completedAt: new Date().toISOString(),
+    };
+
+    if (existingAssessment) Object.assign(existingAssessment, savedAssessment);
+    else user.assessments.push(savedAssessment);
+
+    if (savedAssessment.score >= 80) {
+        user.certificates = Array.isArray(user.certificates) ? user.certificates : [];
+        const learnlyCertificate = sanitizeCertificate({
+            id: `learnly-${course.id}`,
+            title: course.title,
+            issuer: "Learnly Academy",
+            issueDate: savedAssessment.completedAt.slice(0, 10),
+            credentialId: `LEARNLY-${user.id}-${course.id}`,
+            skills: [course.topic],
+            courseId: course.id,
+            score: savedAssessment.score,
+        }, "learnly");
+        const existingCertificateIndex = user.certificates.findIndex((certificate) => certificate.id === learnlyCertificate.id);
+        if (existingCertificateIndex >= 0) user.certificates[existingCertificateIndex] = learnlyCertificate;
+        else user.certificates.unshift(learnlyCertificate);
+    }
+
+    saveUsers();
+    return res.json({ message: "Assessment saved", assessment: savedAssessment });
 });
 
 function publicUser(user) {

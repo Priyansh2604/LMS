@@ -108,6 +108,36 @@
     outline-offset: 3px;
 }
 
+.course-card-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: auto 18px 22px;
+}
+
+.course-card-actions .course-enroll-button {
+    flex: 1 1 150px;
+    margin: 0;
+}
+
+.course-completed-label {
+    display: inline-block;
+    margin: 18px 18px 0;
+    color: #5eaa8b;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+.course-report-link {
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 5px;
+}
+
 @media (max-width: 900px) {
     .courses { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
